@@ -1,8 +1,8 @@
 # We Are All World MVP开发实现文档 - Telegram Bot实现
 
 **文档类型**：MVP开发实现文档（分册五）
-**版本**：v6.0（简化版）
-**日期**：2026年2月25日
+**版本**：v16.0（基于最新需求文档与sub_project须知优化版）
+**日期**：2026年2月26日
 
 ---
 
@@ -528,10 +528,16 @@ bot.on('callback_query', async (ctx) => {
     const choiceId = data.split('_')[2];
 
     // 更新剧情进度
+    const { data: currentProgress } = await supabase
+      .from('story_progress')
+      .select('choices_made')
+      .eq('user_id', userId)
+      .single();
+
     await supabase
       .from('story_progress')
       .update({
-        choices_made: supabase.raw('array_append(choices_made, ?)', [choiceId])
+        choices_made: [...(currentProgress?.choices_made || []), choiceId]
       })
       .eq('user_id', userId);
 
@@ -583,21 +589,125 @@ bot.hears('💬 对话', async (ctx) => {
 });
 
 bot.hears('💫 查看记忆', async (ctx) => {
-  // 触发/memory命令
-  ctx.message.text = '/memory';
-  await bot.handleUpdate({ message: ctx.message } as any);
+  const userId = ctx.from!.id.toString();
+  
+  // 查询用户记忆点数
+  const { data: partner } = await supabase
+    .from('ai_partners')
+    .select('memory_points, partner_name')
+    .eq('user_id', userId)
+    .single();
+
+  if (!partner) {
+    await ctx.reply('请先使用 /start 命令创建AI伙伴。');
+    return;
+  }
+
+  const { data: logs } = await supabase
+    .from('memory_points_log')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  let message = `💫 ${partner.partner_name} 的记忆\n\n`;
+  message += `当前记忆点数：${partner.memory_points}\n\n`;
+  message += '最近记录：\n';
+  
+  if (logs && logs.length > 0) {
+    logs.forEach(log => {
+      message += `• ${log.reason}：${log.change > 0 ? '+' : ''}${log.change}\n`;
+    });
+  } else {
+    message += '暂无记忆记录\n';
+  }
+
+  await ctx.reply(message, { reply_markup: mainMenuKeyboard });
 });
 
 bot.hears('📖 剧情', async (ctx) => {
-  // 触发/story命令
-  ctx.message.text = '/story';
-  await bot.handleUpdate({ message: ctx.message } as any);
+  const userId = ctx.from!.id.toString();
+  
+  // 查询当前剧情进度
+  const { data: progress } = await supabase
+    .from('story_progress')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (!progress) {
+    await ctx.reply('请先使用 /start 命令创建AI伙伴。');
+    return;
+  }
+
+  // 调用OpenClaw获取剧情内容
+  const response = await fetch(
+    `http://user-svc-${userId}:18789/api/skills/story-progress/get_scene`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chapter: progress.current_chapter,
+        scene_id: progress.current_scene,
+        user_context: { userId: userId }
+      })
+    }
+  );
+
+  const result = await response.json();
+
+  await ctx.reply(
+    result.content,
+    {
+      reply_markup: {
+        inline_keyboard: result.choices.map(choice => [{
+          text: choice.text,
+          callback_data: `story_choice_${choice.id}`
+        }])
+      }
+    }
+  );
 });
 
 bot.hears('📅 每日签到', async (ctx) => {
-  // 触发/checkin命令
-  ctx.message.text = '/checkin';
-  await bot.handleUpdate({ message: ctx.message } as any);
+  const userId = ctx.from!.id.toString();
+  const today = new Date().toISOString().split('T')[0];
+
+  // 检查今天是否已签到
+  const { data: existing } = await supabase
+    .from('daily_signin')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('signin_date', today)
+    .single();
+
+  if (existing) {
+    await ctx.reply('今天已经签到过了，明天再来吧！', { reply_markup: mainMenuKeyboard });
+    return;
+  }
+
+  // 执行签到
+  const { data: signin } = await supabase
+    .from('daily_signin')
+    .insert({
+      user_id: userId,
+      signin_date: today,
+      streak_days: 0 // 数据库函数会自动计算
+    })
+    .select()
+    .single();
+
+  // 增加记忆点数
+  await supabase.rpc('update_memory_points', {
+    p_user_id: userId,
+    p_change: 1,
+    p_reason: '每日签到'
+  });
+
+  await ctx.reply(
+    `签到成功！连续签到 ${signin.streak_days} 天，获得 +1 记忆点数。`,
+    { reply_markup: mainMenuKeyboard }
+  );
 });
 ```
 
@@ -643,8 +753,8 @@ function createStoryChoicesKeyboard(choices: any[]) {
 
 ---
 
-*文档生成时间：2026年2月25日*
-*版本：v6.0（简化版）*
+*文档生成时间：2026年2月26日*
+*版本：v16.0（基于最新需求文档与sub_project须知优化版）*
 *更新说明：*
 *1. 大幅简化Bot命令，从11个减少到4个核心命令*
 *2. 移除实用能力命令（/practical），OpenClaw自动识别*
@@ -653,3 +763,4 @@ function createStoryChoicesKeyboard(choices: any[]) {
 *5. 简化键盘交互，只保留主菜单和剧情选择*
 *6. Bot代码量减少约70%*
 *7. 符合"优先使用OpenClaw内置能力"和"简化设计"原则*
+*8. 更新版本号至v16.0以保持与其他文档一致*

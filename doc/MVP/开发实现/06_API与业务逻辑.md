@@ -1,8 +1,8 @@
 # We Are All World MVP开发实现文档 - API与业务逻辑
 
 **文档类型**：MVP开发实现文档（分册六）
-**版本**：v6.0（简化版）
-**日期**：2026年2月25日
+**版本**：v16.0（基于最新需求文档与sub_project须知优化版）
+**日期**：2026年2月26日
 
 ---
 
@@ -370,12 +370,19 @@ export async function updateStoryProgress(
   sceneId: string,
   choice: string
 ) {
+  // 先获取当前进度
+  const { data: currentProgress } = await supabase
+    .from('story_progress')
+    .select('choices_made')
+    .eq('user_id', userId)
+    .single();
+
   const { data, error } = await supabase
     .from('story_progress')
     .update({
       current_chapter: chapter,
       current_scene: sceneId,
-      choices_made: supabase.raw('array_append(choices_made, ?)', [choice]),
+      choices_made: [...(currentProgress?.choices_made || []), choice],
       updated_at: new Date().toISOString()
     })
     .eq('user_id', userId)
@@ -471,7 +478,7 @@ export async function handleUserMessage(
   if (openClawResponse.memory_points > 0) {
     await supabase.rpc('update_memory_points', {
       p_user_id: user.id,
-      p_points: openClawResponse.memory_points,
+      p_change: openClawResponse.memory_points,
       p_source_type: 'dialogue',
       p_source_detail: openClawResponse.quality_type
     });
@@ -583,39 +590,34 @@ export async function runDormantDecay() {
   for (const ai of aiPartners) {
     try {
       // 获取当前记忆点数
-      const { data: user } = await adminSupabase
-        .from('users')
+      const { data: aiPartner } = await adminSupabase
+        .from('ai_partners')
         .select('memory_points')
-        .eq('id', ai.user_id)
+        .eq('user_id', ai.user_id)
         .single();
 
-      if (user && user.memory_points > 0) {
+      if (aiPartner && aiPartner.memory_points > 0) {
         // 减少2点
-        const newPoints = Math.max(0, user.memory_points - 2);
+        const newPoints = Math.max(0, aiPartner.memory_points - 2);
 
         await adminSupabase
-          .from('users')
+          .from('ai_partners')
           .update({ memory_points: newPoints })
-          .eq('id', ai.user_id);
+          .eq('user_id', ai.user_id);
 
         // 记录日志
         await adminSupabase
           .from('memory_points_log')
           .insert({
             user_id: ai.user_id,
-            points: -2,
+            change: -2,
             source_type: 'dormant_decay',
             source_detail: `休眠衰减，剩余${newPoints}点`
           });
 
-        // 如果归零，标记为已回收
+        // 如果归零，保持休眠状态
         if (newPoints === 0) {
-          await adminSupabase
-            .from('ai_partners')
-            .update({ status: 'recycled' })
-            .eq('user_id', ai.user_id);
-
-          console.log(`用户 ${ai.user_id} 的AI已被回收`);
+          console.log(`用户 ${ai.user_id} 的AI记忆点数已归零，保持休眠状态`);
         }
       }
     } catch (err) {
@@ -749,8 +751,8 @@ spec:
 
 ---
 
-*文档生成时间：2026年2月25日*
-*版本：v6.0（简化版）*
+*文档生成时间：2026年2月26日*
+*版本：v16.0（基于最新需求文档与sub_project须知优化版）*
 *更新说明：*
 *1. 废弃复杂的内部API设计（UserServiceAPI、ChatServiceAPI等）*
 *2. 直接调用Supabase RPC和查询，无需封装层*
@@ -760,3 +762,4 @@ spec:
 *6. 业务逻辑主要由数据库函数和OpenClaw Skills处理*
 *7. 代码量减少约60%*
 *8. 符合"简化设计"和"复用OpenClaw能力"原则*
+*9. 更新版本号至v16.0以保持与其他文档一致*

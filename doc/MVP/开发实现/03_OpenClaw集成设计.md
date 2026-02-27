@@ -1,8 +1,8 @@
 # We Are All World MVP开发实现文档 - OpenClaw集成设计
 
 **文档类型**：MVP开发实现文档（分册三）
-**版本**：v6.0（简化版）
-**日期**：2026年2月25日
+**版本**：v16.0（基于最新需求文档与sub_project须知优化版）
+**日期**：2026年2月26日
 
 ---
 
@@ -31,6 +31,7 @@
 - ✅ **数据主要存PVC** - OpenClaw自动将记忆保存到PVC
 - ✅ **简化集成** - 主项目通过K8s Service调用OpenClaw，传递用户上下文
 - ✅ **专注游戏Skills** - 开发3个核心游戏Skills，复用OpenClaw基础能力
+- ✅ **实用能力增强** - 通过情感养成，AI伙伴逐渐了解用户的偏好、习惯和上下文，从而在实用能力上提供超越通用AI的个性化服务
 
 ### 1.2 OpenClaw能力复用清单
 
@@ -49,8 +50,11 @@
 | Skill | 功能 | 复杂度 | 优先级 |
 |------|------|--------|--------|
 | `emotion-express` | 根据情感状态生成情感化回复 | 低 | P0 |
-| `story-progress` | 推进剧情、管理剧情分支 | 中 | P0 |
+| `story-progress` | 推进剧情、管理剧情分支、AI细节生成 | 中 | P0 |
 | `memory-point-calc` | 计算对话质量、返回点数 | 低 | P1 |
+| `personal-knowledge` | 个性化知识库管理（偏好记忆、背景记忆、目标记忆、关系记忆、历史记忆） | 高 | P1 |
+| `style-adaptation` | 风格适配系统（详细程度、语言风格、解释方式、偏好格式、节奏偏好） | 中 | P1 |
+| `context-continuity` | 上下文延续系统（任务延续、目标延续、偏好延续、关系延续、成长延续） | 高 | P1 |
 
 ### 1.3 架构简化
 
@@ -790,3 +794,4 @@ OpenClaw启动时读取PVC数据
 *4. 简化集成，主项目通过K8s Service调用OpenClaw*
 *5. 专注开发3个游戏专属Skills（emotion-express, story-progress, memory-point-calc）*
 *6. 符合"优先使用OpenClaw内置能力"和"简化数据库设计"原则*
+*7. 修复拼写错误（emotional、rational、lonely、dormant等）*

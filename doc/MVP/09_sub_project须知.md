@@ -1,9 +1,14 @@
 # sub_project 须知 - 云版OpenClaw开发指南
 
 **文档类型**：MVP开发实现文档（分册九）
-**版本**：v7.0
-**日期**：2026年2月24日
-**更新说明**：明确子项目定位为云版OpenClaw，主项目是基于OpenClaw构建的游戏
+**版本**：v8.0
+**日期**：2026年2月26日
+**更新说明**：
+1. 明确子项目定位为云版OpenClaw，主项目是基于OpenClaw构建的游戏
+2. 补充实用能力增强机制的详细说明
+3. 完善OpenClaw配置和PVC存储结构
+4. 更新成本估算和开发任务清单
+5. 增加数据备份恢复和故障处理机制
 
 ---
 
@@ -51,6 +56,7 @@
    - 记忆管理（短期/长期记忆）
    - 技能系统（Skills框架）
    - 工具调用（浏览器、文件操作等）
+   - 实用能力增强（基于记忆点数的个性化服务）
 
 ### 1.3 核心原则
 
@@ -74,13 +80,13 @@
 │  • 社交分享（X.com分享）                                                    │
 │                                                                             │
 │  OpenClaw Skills（游戏技能）：                                               │
-│  • 情感表达技能                                                              │
-│  • 剧情推进技能                                                              │
-│  • 记忆管理技能                                                              │
-│  • 实用能力技能（复用OpenClaw内置能力）                                      │
+│  • 情感表达技能（emotion-express）                                           │
+│  • 剧情推进技能（story-progress）                                            │
+│  • 记忆点数计算技能（memory-point-calc）                                       │
+│  • 实用能力技能（复用OpenClaw内置能力，根据记忆点数增强）                        │
 └────────────────────────────────────────┬────────────────────────────────────┘
-                                         │
-                                         ▼
+                                          │
+                                          ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           子项目（云版OpenClaw）                             │
 │                                                                             │
@@ -89,6 +95,7 @@
 │  • 记忆管理（短期/长期记忆）                                                 │
 │  • 技能系统（Skills框架）                                                    │
 │  • 工具调用（浏览器、文件操作等）                                            │
+│  • 实用能力增强（个性化知识库、交互风格适配、上下文延续）                      │
 │                                                                             │
 │  云基础设施：                                                                │
 │  • 每用户独立Pod（Deployment模板）                                           │
@@ -96,6 +103,7 @@
 │  • 竞价实例（Spot，降低成本60-80%）                                          │
 │  • NetworkPolicy（网络隔离）                                                 │
 │  • Serverless按秒计费                                                        │
+│  • 自动恢复（竞价实例回收后自动重新调度）                                     │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -104,14 +112,57 @@
 | 维度 | 主项目（游戏） | 子项目（云版OpenClaw） |
 |-----|----------------|----------------------|
 | **定位** | 基于OpenClaw构建的游戏 | 云版OpenClaw基础设施 |
-| **职责** | 游戏业务逻辑、Skills开发 | OpenClaw云部署、基础设施管理 |
-| **数据存储** | Supabase（用户信息、记忆点数、剧情进度） | PVC（OpenClaw工作目录、用户记忆） |
+| **职责** | 游戏业务逻辑、游戏Skills开发 | OpenClaw云部署、基础设施管理 |
+| **数据存储** | Supabase（用户信息、记忆点数、剧情进度） | PVC（OpenClaw工作目录、对话历史、长期记忆） |
 | **数据库表** | users, ai_partners, story_progress, memory_points | 无独立表，使用主项目数据 |
-| **通信方式** | 通过K8s Service调用用户OpenClaw Pod | 提供HTTP API供主项目调用 |
-| **配置管理** | 游戏配置、剧情骨架、Prompt模板 | OpenClaw配置、Skills配置 |
+| **通信方式** | 通过K8s Service调用用户OpenClaw Pod | 提供HTTP API（/api/chat, /api/memory, /api/skills）供主项目调用 |
+| **配置管理** | 游戏配置、剧情骨架、Prompt模板 | OpenClaw配置（openclaw-config.yml）、游戏配置（game-config.yml）、Skills配置 |
 | **代码仓库** | we-are-all-world（主仓库） | sub_project目录或独立仓库 |
-| **部署产物** | Docker镜像（管理沙箱） | Kubernetes YAML模板 |
-| **版本管理** | 独立版本号 | 跟随OpenClaw版本 |
+| **部署产物** | Docker镜像（管理沙箱） | Kubernetes YAML模板（Deployment、Service、PVC、Secret、ConfigMap） |
+| **运行模式** | 常驻服务，多用户共享 | 每用户独立Pod，持续运行 |
+| **版本管理** | 独立版本号 | 跟随OpenClaw版本 + 游戏Skills版本 |
+
+### 1.6 实用能力增强机制
+
+**核心设计理念**：通过情感养成，AI伙伴逐渐了解用户的偏好、习惯和上下文，从而在实用能力上提供超越通用AI的个性化服务。
+
+**三大转化机制**：
+
+##### 1. 个性化知识库（Personal Knowledge Graph）
+
+AI通过日常互动逐渐构建用户的个性化知识库，并在后续的实用任务中主动应用这些知识。
+
+| 知识类型 | 记录内容 | 应用场景 | 示例 |
+|---------|---------|---------|------|
+| **偏好记忆** | 用户的喜好、习惯、风格 | 个性化推荐和输出调整 | "你喜欢简洁的代码风格" → 生成代码时添加注释 |
+| **背景记忆** | 用户的工作、学习、生活背景 | 上下文理解和任务优化 | "你是前端开发者" → 示例代码使用JavaScript |
+| **目标记忆** | 用户的短期和长期目标 | 主动建议和任务优化 | "你在准备面试" → 主动提供面试题和技巧 |
+| **关系记忆** | 用户社交关系和协作模式 | 协作任务优化 | "你和小王一起做项目" → 建议使用你们熟悉的工具 |
+| **历史记忆** | 用户过往的选择和结果 | 经验应用和避免重复错误 | "你上次用X方案失败了" → 建议尝试Y方案 |
+
+##### 2. 风格适配系统（Style Adaptation）
+
+AI根据用户的性格特征和表达习惯，自动调整输出风格，使交互更自然高效。
+
+| 适配维度 | 用户特征检测 | AI输出调整 | 示例 |
+|---------|------------|----------|------|
+| **详细程度** | 简洁型 vs 详细型 | 输出信息密度 | 简洁型：用要点；详细型：用段落 |
+| **语言风格** | 正式 vs 非正式 | 用词和语气 | 正式：使用专业术语；非正式：更口语化 |
+| **解释方式** | 直觉型 vs 逻辑型 | 解释深度 | 直觉型：多例子；逻辑型：多推导 |
+| **偏好格式** | 文字 vs 结构化 | 信息呈现方式 | 结构化型：用表格、列表 |
+| **节奏偏好** | 快速型 vs 深思型 | 输出速度和步骤 | 快速型：直接给答案；深思型：分步骤 |
+
+##### 3. 上下文延续系统（Context Continuity）
+
+AI能够理解用户任务的历史背景和深层需求，在长期协作中提供连贯的智能支持。
+
+| 延续类型 | 功能描述 | 记忆周期 | 应用示例 |
+|---------|---------|---------|----------|
+| **任务延续** | 记住用户未完成的任务 | 长期（直到完成） | "你上周在做的Python爬虫还需要调试吗？" |
+| **目标延续** | 记住用户的长期目标 | 长期（直到达成） | "距离你的目标还有3周，需要我帮你规划吗？" |
+| **偏好延续** | 在新任务中应用已知偏好 | 永久（除非用户改变） | "按照你喜欢的简洁风格写代码" |
+| **关系延续** | 记住跨任务的关联 | 长期 | "这个新项目和你上周做的那个可以共用代码" |
+| **成长延续** | 追踪用户能力的提升 | 长期 | "你上次问的是基础问题，这次我可以深入一些" |
 
 ---
 
@@ -147,10 +198,13 @@ OpenClaw是一个开源的、可自托管的AI助手/智能体平台，不仅仅
 
 | 配置项 | 值 | 说明 |
 |-------|-----|------|
-| **工作目录** | `/home/node/.openclaw/workspace` | 会话数据存储位置 |
+| **工作目录** | `/home/node/.openclaw/workspace` | OpenClaw工作目录，挂载PVC |
 | **配置文件** | `/app/config/openclaw-config.yml` | OpenClaw主配置文件 |
+| **游戏配置** | `/app/config/game-config.yml` | 游戏专属配置（记忆点数、剧情、里程碑等） |
 | **Gateway端口** | 18789 | 仅集群内访问，严禁暴露公网 |
 | **生命周期** | 持续运行 | 用户不活跃时仍保持运行（保证响应速度） |
+| **LLM模型** | gpt-4o-mini（MVP阶段） | 低成本模型，后续可升级 |
+| **记忆保留** | 30天（短期）、永久（长期） | 对话历史保留30天，长期记忆永久保留 |
 
 ---
 
@@ -204,6 +258,8 @@ spec:
           env:
             - name: OPENCLAW_CONFIG_FILE
               value: /app/config/openclaw-config.yml
+            - name: GAME_CONFIG_FILE
+              value: /app/config/game-config.yml
             - name: USER_ID
               value: "${USER_ID}"
             - name: OPENAI_API_KEY
@@ -230,6 +286,7 @@ spec:
               port: 18789
             initialDelaySeconds: 30
             periodSeconds: 60
+            timeoutSeconds: 10
           lifecycle:
             preStop:
               exec:
@@ -288,6 +345,33 @@ spec:
 | **竞价实例回收** | 自动重新调度 | 从PVC恢复数据 |
 | **Pod终止** | PreStop Hook | 优雅关闭，保存状态 |
 
+### 3.4 PVC存储结构
+
+```
+/home/node/.openclaw/workspace/
+├── conversations/                      # OpenClaw自动创建
+│   ├── 2026-02-24.jsonl              # 当日对话记录
+│   ├── 2026-02-25.jsonl              # 次日对话记录
+│   └── index.json                    # 索引文件
+│
+├── memory/                           # Skills自动创建
+│   ├── short-term/                   # 短期记忆（自动）
+│   │   └── recent.json
+│   └── long-term/                    # 长期记忆（Skills创建）
+│       ├── USER.md                   # 用户画像
+│       ├── PREFERENCES.md            # 用户偏好
+│       └── IMPORTANT_EVENTS.md       # 重要事件
+│
+├── skills/                           # 游戏专属Skills
+│   ├── emotion-express/
+│   ├── story-progress/
+│   └── memory-point-calc/
+│
+└── config/                           # 配置文件
+    ├── openclaw-config.yml
+    └── game-config.yml
+```
+
 ---
 
 ## 4. 数据库设计
@@ -298,15 +382,17 @@ spec:
 
 ### 4.2 数据存储位置
 
-| 数据类型 | 存储位置 | 管理方 |
-|---------|---------|--------|
-| **用户信息** | Supabase (users表) | 主项目 |
-| **AI伙伴状态** | Supabase (ai_partners表) | 主项目 |
-| **记忆点数** | Supabase (memory_points表) | 主项目 |
-| **剧情进度** | Supabase (story_progress表) | 主项目 |
-| **OpenClaw工作目录** | PVC (/home/node/.openclaw/workspace) | 子项目 |
-| **用户记忆文件** | PVC (workspace/memory/) | 子项目 |
-| **会话配置** | PVC (workspace/config/) | 子项目 |
+| 数据类型 | 存储位置 | 管理方 | 说明 |
+|---------|---------|--------|------|
+| **用户信息** | Supabase (users表) | 主项目 | 永久 |
+| **AI伙伴状态** | Supabase (ai_partners表) | 主项目 | 永久 |
+| **记忆点数** | Supabase (memory_points表) | 主项目 | 永久 |
+| **剧情进度** | Supabase (story_progress表) | 主项目 | 永久 |
+| **对话历史** | PVC (workspace/conversations/) | 子项目 | 30天 |
+| **短期记忆** | PVC (workspace/memory/short-term/) | 子项目 | 自动管理 |
+| **长期记忆** | PVC (workspace/memory/long-term/) | 子项目 | 永久 |
+| **用户画像** | PVC (workspace/memory/long-term/USER.md) | 子项目 | 永久 |
+| **用户偏好** | PVC (workspace/memory/long-term/PREFERENCES.md) | 子项目 | 永久 |
 
 ### 4.3 数据同步机制
 
@@ -321,7 +407,28 @@ interface UserContext {
   recentMemories: Memory[];       // 近期记忆
   preferences: UserPreferences;   // 用户偏好
   currentGoal?: string;           // 当前目标
+  practicalAbilityBoost: number;  // 实用能力增强百分比
 }
+```
+
+### 4.4 数据备份与恢复
+
+**PVC自动备份**：
+- 华为云EVS支持定期快照
+- Pod重启后自动从PVC恢复数据
+- 竞价实例回收后数据不丢失
+
+**数据恢复流程**：
+```
+竞价实例回收
+    ↓
+CCI自动重新调度Pod
+    ↓
+Pod挂载原有PVC
+    ↓
+OpenClaw启动时读取PVC数据
+    ↓
+继续服务（用户无感知）
 ```
 
 ---
@@ -338,10 +445,11 @@ const response = await fetch(`http://user-svc-${userId}:18789/api/chat`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
+    'X-User-Context': JSON.stringify(userContext),
   },
   body: JSON.stringify({
     message: userMessage,
-    context: userContext,
+    context_type: 'normal',  // normal, onboarding, story, deep_chat
   }),
 });
 ```
@@ -364,11 +472,12 @@ const response = await fetch(`http://user-svc-${userId}:18789/api/chat`, {
         → 用户认证
         → 路由到用户OpenClaw Pod (user-svc-{USER_ID}:18789)
         → 用户OpenClaw Pod处理：
-           ├── 质量判定（调用管理沙箱）
-           ├── 记忆图谱更新
-           ├── 情感状态更新
-           ├── LLM API生成回复
-           └── 返回响应
+            ├── 调用emotion-express Skill（情感表达）
+            ├── 调用memory-point-calc Skill（质量判定）
+            ├── 记忆图谱更新
+            ├── 情感状态更新
+            ├── LLM API生成回复
+            └── 返回响应
         → 管理沙箱更新数据库（记忆点数、里程碑等）
         → Telegram发送回复
 ```
@@ -536,6 +645,9 @@ Supabase：
 - [ ] 配置主项目与子项目的通信接口
 - [ ] 实现用户上下文传递机制
 - [ ] 开发OpenClaw Skills（游戏技能）
+  - [ ] emotion-express Skill（情感表达）
+  - [ ] story-progress Skill（剧情推进）
+  - [ ] memory-point-calc Skill（点数计算）
 - [ ] 集成测试
 
 ### Phase 4：测试与验收
@@ -546,6 +658,7 @@ Supabase：
 - [ ] 验证PVC数据持久化（Pod重启后数据不丢失）
 - [ ] 检查NetworkPolicy是否生效（确保网络隔离）
 - [ ] 测试成本优化效果
+- [ ] 验证实用能力增强机制（个性化知识库、风格适配、上下文延续）
 
 ---
 
@@ -559,10 +672,11 @@ Supabase：
 
 ---
 
-*文档生成时间：2026年2月24日*
-*版本：v7.0*
+*文档生成时间：2026年2月26日*
+*版本：v8.0*
 *更新说明：*
 *1. 明确子项目定位为云版OpenClaw，主项目是基于OpenClaw构建的游戏*
-*2. 简化数据库设计，子项目不创建独立数据库表*
-*3. 明确主项目与子项目的职责边界*
-*4. 更新API通信接口设计*
+*2. 补充实用能力增强机制的详细说明（个性化知识库、风格适配、上下文延续）*
+*3. 完善OpenClaw配置和PVC存储结构*
+*4. 更新成本估算和开发任务清单*
+*5. 增加数据备份恢复和故障处理机制*

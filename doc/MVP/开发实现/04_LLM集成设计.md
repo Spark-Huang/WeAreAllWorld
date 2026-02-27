@@ -1,8 +1,8 @@
 # We Are All World MVP开发实现文档 - LLM集成设计
 
 **文档类型**：MVP开发实现文档（分册四）
-**版本**：v6.0（简化版）
-**日期**：2026年2月25日
+**版本**：v16.0（基于最新需求文档与sub_project须知优化版）
+**日期**：2026年2月26日
 
 ---
 
@@ -624,8 +624,8 @@ function detectEmotion(message: string): string {
 
 ---
 
-*文档生成时间：2026年2月25日*
-*版本：v6.0（简化版）*
+*文档生成时间：2026年2月26日*
+*版本：v16.0（基于最新需求文档与sub_project须知优化版）*
 *更新说明：*
 *1. 废弃独立的LLMService和QualityJudgeService*
 *2. 复用OpenClaw内置的LLM集成能力*
@@ -633,3 +633,4 @@ function detectEmotion(message: string): string {
 *4. 简化Prompt设计，只保留核心系统提示词*
 *5. 通过配置文件管理LLM参数，而非编码*
 *6. 符合"优先使用OpenClaw内置能力"和"简化设计"原则*
+*7. 更新版本号至v16.0以保持与其他文档一致*
