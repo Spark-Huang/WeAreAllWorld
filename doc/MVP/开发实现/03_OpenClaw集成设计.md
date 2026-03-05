@@ -1,4 +1,4 @@
-# We Are All World MVP开发实现文档 - OpenClaw集成设计
+# 共生世界（WeAreAll.World） MVP开发实现文档 - OpenClaw集成设计
 
 **文档类型**：MVP开发实现文档（分册三）
 **版本**：v16.0（基于最新需求文档与sub_project须知优化版）
@@ -175,7 +175,7 @@ skills:
 # /app/config/game-config.yml
 
 game:
-  name: "We Are All World"
+  name: "共生世界（WeAreAll.World）"
   version: "1.0.0"
   
   # 记忆点数配置

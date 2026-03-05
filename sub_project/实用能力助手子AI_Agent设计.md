@@ -1,4 +1,4 @@
-# We Are All World 实用能力助手子AI Agent设计
+# 共生世界（WeAreAll.World） 实用能力助手子AI Agent设计
 
 **文档类型**：子项目技术设计文档
 **版本**：v1.0

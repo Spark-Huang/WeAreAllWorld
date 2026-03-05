@@ -1,4 +1,4 @@
-# We Are All World 技术架构文档
+# 共生世界（WeAreAll.World） 技术架构文档
 
 **文档类型**：技术架构文档
 **版本**：v1.0
@@ -102,7 +102,7 @@ Response:
 {
   "user_id": "uuid",
   "ai_partner_id": "uuid",
-  "message": "欢迎来到We Are All World！"
+  "message": "欢迎来到共生世界（WeAreAll.World）！"
 }
 ```
 

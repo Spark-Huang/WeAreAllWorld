@@ -1,4 +1,4 @@
-# We Are All World MVP需求文档（元宇宙版本）
+# 共生世界（WeAreAll.World） MVP需求文档（元宇宙版本）
 
 **文档类型**：MVP需求文档
 **版本**：v2.1（与主设计文档同步）
