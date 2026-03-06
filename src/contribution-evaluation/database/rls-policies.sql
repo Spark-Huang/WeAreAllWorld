@@ -8,6 +8,20 @@
 -- ============================================
 
 -- ============================================
+-- 0. 启用所有表的 RLS (关键步骤！)
+-- ============================================
+
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ai_partners ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.interaction_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.central_evaluations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.story_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_signin ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.consensus_votes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.deep_dialogue ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.weekly_rewards ENABLE ROW LEVEL SECURITY;
+
+-- ============================================
 -- 1. 用户表 (users) RLS 策略
 -- ============================================
 
