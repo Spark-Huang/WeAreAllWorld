@@ -1,5 +1,5 @@
 /**
- * 共生世界（WeAreAll.World）- 公共类型定义
+ * 天下一家（WeAreAll.World）- 公共类型定义
  */
 
 /**

@@ -1,7 +1,7 @@
 {
   "name": "weareallworld",
   "version": "1.0.0",
-  "description": "共生世界 - AI nurturing + text adventure + practical assistant platform",
+  "description": "天下一家 - AI nurturing + text adventure + practical assistant platform",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

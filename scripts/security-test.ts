@@ -1,5 +1,5 @@
 /**
- * 共生世界（WeAreAll.World）- 核心系统安全测试套件
+ * 天下一家（WeAreAll.World）- 核心系统安全测试套件
  * 
  * 测试范围：
  * 1. 功能完整性测试
@@ -1111,7 +1111,7 @@ async function testDataIntegrity(): Promise<void> {
 // ============================================
 async function main(): Promise<void> {
   console.log('\n' + '█'.repeat(60));
-  console.log('█  共生世界核心系统安全测试套件 v1.0                  █');
+  console.log('█  天下一家核心系统安全测试套件 v1.0                  █');
   console.log('█  目标：世界顶级黑客也无法攻破                      █');
   console.log('█'.repeat(60));
 

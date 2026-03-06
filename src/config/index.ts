@@ -1,5 +1,5 @@
 /**
- * 共生世界（WeAreAll.World）- 配置服务
+ * 天下一家（WeAreAll.World）- 配置服务
  */
 
 export interface AppConfig {
