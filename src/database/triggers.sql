@@ -1,40 +1,35 @@
 -- ============================================
--- 共生世界（WeAreAll.World）数据库触发器
--- 版本: MVP v1.0
+-- 共生世界（WeAreAll.World）数据库触发器 v2.1
 -- 日期: 2026-03-06
 -- ============================================
 
 -- ============================================
--- 1. 用户创建时自动初始化AI伙伴和剧情进度
+-- 1. 自动创建AI伙伴记录
 -- ============================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  -- 创建AI伙伴
-  INSERT INTO public.ai_partners (user_id, personality, name)
-  VALUES (NEW.id, 'warm', 'AI伙伴');
-  
-  -- 创建剧情进度
-  INSERT INTO public.story_progress (user_id, current_chapter, status)
-  VALUES (NEW.id, 1, 'available');
-  
+  INSERT INTO public.ai_partners (user_id)
+  VALUES (NEW.id);
   RETURN NEW;
 END;
 $$;
 
+-- 删除已存在的触发器（如果有）
+DROP TRIGGER IF EXISTS on_user_created ON public.users;
+
 -- 创建触发器
-DROP TRIGGER IF EXISTS on_new_user ON public.users;
-CREATE TRIGGER on_new_user
+CREATE TRIGGER on_user_created
   AFTER INSERT ON public.users
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
 
-COMMENT ON FUNCTION public.handle_new_user IS '用户创建时自动创建AI伙伴和剧情进度';
+COMMENT ON FUNCTION public.handle_new_user IS '新用户注册时自动创建AI伙伴记录';
 
 -- ============================================
--- 2. 自动更新updated_at字段
+-- 2. 更新时间戳触发器
 -- ============================================
 CREATE OR REPLACE FUNCTION public.update_updated_at()
 RETURNS TRIGGER
@@ -46,19 +41,21 @@ BEGIN
 END;
 $$;
 
--- 应用到相关表
+-- 用户表更新时间戳
 DROP TRIGGER IF EXISTS update_users_updated_at ON public.users;
 CREATE TRIGGER update_users_updated_at
   BEFORE UPDATE ON public.users
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at();
 
+-- AI伙伴表更新时间戳
 DROP TRIGGER IF EXISTS update_ai_partners_updated_at ON public.ai_partners;
 CREATE TRIGGER update_ai_partners_updated_at
   BEFORE UPDATE ON public.ai_partners
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at();
 
+-- 剧情进度表更新时间戳
 DROP TRIGGER IF EXISTS update_story_progress_updated_at ON public.story_progress;
 CREATE TRIGGER update_story_progress_updated_at
   BEFORE UPDATE ON public.story_progress
@@ -68,59 +65,25 @@ CREATE TRIGGER update_story_progress_updated_at
 COMMENT ON FUNCTION public.update_updated_at IS '自动更新updated_at字段';
 
 -- ============================================
--- 3. 记忆点数变化时更新最后互动时间
+-- 3. 贡献值变化事件触发器（用于里程碑通知）
 -- ============================================
-CREATE OR REPLACE FUNCTION public.update_last_interaction()
+CREATE OR REPLACE FUNCTION public.on_contribution_changed()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  -- 只有正向点数变化才更新
-  IF NEW.points > 0 THEN
-    UPDATE public.ai_partners
-    SET last_interaction_at = NOW()
-    WHERE user_id = NEW.user_id;
-  END IF;
-  
+  -- 当累计贡献值变化时，可以在这里添加通知逻辑
+  -- 例如：插入通知队列、触发Webhook等
   RETURN NEW;
 END;
 $$;
 
-DROP TRIGGER IF EXISTS on_memory_points_change ON public.memory_points_log;
-CREATE TRIGGER on_memory_points_change
-  AFTER INSERT ON public.memory_points_log
+-- 贡献值变化触发器
+DROP TRIGGER IF EXISTS contribution_changed ON public.ai_partners;
+CREATE TRIGGER contribution_changed
+  AFTER UPDATE OF total_contribution ON public.ai_partners
   FOR EACH ROW
-  EXECUTE FUNCTION public.update_last_interaction();
+  WHEN (OLD.total_contribution IS DISTINCT FROM NEW.total_contribution)
+  EXECUTE FUNCTION public.on_contribution_changed();
 
-COMMENT ON FUNCTION public.update_last_interaction IS '记忆点数变化时更新最后互动时间';
-
--- ============================================
--- 4. AI状态变化时记录日志
--- ============================================
-CREATE OR REPLACE FUNCTION public.log_ai_status_change()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  -- 只有状态变化时才记录
-  IF OLD.status IS DISTINCT FROM NEW.status THEN
-    INSERT INTO public.memory_points_log (user_id, points, source_type, source_detail)
-    VALUES (
-      NEW.user_id, 
-      0, 
-      'status_change',
-      format('AI状态从%s变为%s', OLD.status, NEW.status)
-    );
-  END IF;
-  
-  RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS on_ai_status_change ON public.ai_partners;
-CREATE TRIGGER on_ai_status_change
-  AFTER UPDATE ON public.ai_partners
-  FOR EACH ROW
-  EXECUTE FUNCTION public.log_ai_status_change();
-
-COMMENT ON FUNCTION public.log_ai_status_change IS 'AI状态变化时记录日志';
+COMMENT ON FUNCTION public.on_contribution_changed IS '贡献值变化事件处理';
