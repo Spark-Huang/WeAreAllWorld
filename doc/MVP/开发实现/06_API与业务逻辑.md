@@ -77,7 +77,7 @@
 
 ### 2.1 Supabase RPC调用（核心函数）
 
-#### 更新记忆点数
+#### 更新生存算力
 
 ```typescript
 // 直接调用数据库函数
@@ -154,7 +154,7 @@ const { data, error } = await supabase
 // 返回用户 + AI伙伴 + 剧情进度
 ```
 
-#### 查询记忆点数日志
+#### 查询生存算力日志
 
 ```typescript
 const { data, error } = await supabase
@@ -451,7 +451,7 @@ export async function getStoryScene(
 }
 ```
 
-### 3.3 记忆点数更新流程
+### 3.3 生存算力更新流程
 
 ```typescript
 // 完整流程示例
@@ -474,7 +474,7 @@ export async function handleUserMessage(
     }
   );
 
-  // 3. 更新记忆点数（如果有）
+  // 3. 更新生存算力（如果有）
   if (openClawResponse.memory_points > 0) {
     await supabase.rpc('update_memory_points', {
       p_user_id: user.id,
@@ -498,7 +498,7 @@ export async function handleUserMessage(
 | 任务名称 | 执行频率 | 功能 | 优先级 |
 |---------|---------|------|--------|
 | `weekly_evaluation` | 每周一 00:00 | 执行每周评估 | P0 |
-| `dormant_decay` | 每日 00:00 | 休眠AI记忆点数衰减 | P0 |
+| `dormant_decay` | 每日 00:00 | 休眠AI生存算力衰减 | P0 |
 
 **移除的任务**：
 - ❌ daily_greeting（非核心）
@@ -589,7 +589,7 @@ export async function runDormantDecay() {
   // 为每个休眠AI执行衰减
   for (const ai of aiPartners) {
     try {
-      // 获取当前记忆点数
+      // 获取当前生存算力
       const { data: aiPartner } = await adminSupabase
         .from('ai_partners')
         .select('memory_points')
@@ -617,7 +617,7 @@ export async function runDormantDecay() {
 
         // 如果归零，保持休眠状态
         if (newPoints === 0) {
-          console.log(`用户 ${ai.user_id} 的AI记忆点数已归零，保持休眠状态`);
+          console.log(`用户 ${ai.user_id} 的AI生存算力已归零，保持休眠状态`);
         }
       }
     } catch (err) {

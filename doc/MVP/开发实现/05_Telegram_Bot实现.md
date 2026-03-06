@@ -53,7 +53,7 @@
 │  │  • 接收用户消息                                     │   │
 │  │  • 调用OpenClaw API                                │   │
 │  │  • 发送回复给用户                                  │   │
-│  │  • 更新Supabase（记忆点数）                        │   │
+│  │  • 更新Supabase（生存算力）                        │   │
 │  └──────────┬──────────────────────────────────────────┘   │
 │             │ API调用                                     │
 │             ▼                                             │
@@ -86,7 +86,7 @@
 | 命令 | 说明 | 权限 | 优先级 |
 |-----|------|------|--------|
 | `/start` | 开始使用/绑定账号 | 所有人 | P0 |
-| `/memory` | 查看记忆点数和AI状态 | 已登录用户 | P0 |
+| `/memory` | 查看生存算力和AI状态 | 已登录用户 | P0 |
 | `/story` | 进入剧情模式 | 已登录用户 | P0 |
 | `/checkin` | 每日签到 | 已登录用户 | P1 |
 
@@ -179,7 +179,7 @@ bot.command('start', async (ctx) => {
 #### `/memory` - 查看记忆
 
 **功能**：
-- 显示当前记忆点数
+- 显示当前生存算力
 - 显示AI成长阶段
 - 显示已解锁能力
 - 显示最近记忆
@@ -188,7 +188,7 @@ bot.command('start', async (ctx) => {
 ```
 💫 记忆详情
 
-📊 记忆点数：85点
+📊 生存算力：85点
 🎭 成长阶段：成长期
 🏆 当前称号：相知
 
@@ -248,7 +248,7 @@ bot.command('memory', async (ctx) => {
 
   await ctx.reply(
     `💫 记忆详情\n\n` +
-    `📊 记忆点数：${aiPartner.memory_points}点\n` +
+    `📊 生存算力：${aiPartner.memory_points}点\n` +
     `🎭 成长阶段：${aiPartner.growth_stage}\n` +
     `🏆 当前称号：${aiPartner.current_title}\n\n` +
     `✨ 已解锁能力：\n${abilities || '• 暂无'}`,
@@ -335,7 +335,7 @@ bot.command('story', async (ctx) => {
 #### `/checkin` - 每日签到
 
 **功能**：
-- 每日签到获得记忆点数
+- 每日签到获得生存算力
 - 连续签到有额外奖励
 
 **实现**：
@@ -376,7 +376,7 @@ bot.command('checkin', async (ctx) => {
   await ctx.reply(
     `✅ 签到成功！\n\n` +
     `📅 连续签到：${result.streak_count}天\n` +
-    `🎁 获得记忆点数：+${result.total_reward}点`,
+    `🎁 获得生存算力：+${result.total_reward}点`,
     {
       reply_markup: mainMenuKeyboard
     }
@@ -447,7 +447,7 @@ bot.on('message:text', async (ctx) => {
     parse_mode: 'Markdown'
   });
 
-  // 更新记忆点数（如果有点数变化）
+  // 更新生存算力（如果有点数变化）
   if (result.memory_points > 0) {
     await supabase.rpc('update_memory_points', {
       p_user_id: userId,
@@ -591,7 +591,7 @@ bot.hears('💬 对话', async (ctx) => {
 bot.hears('💫 查看记忆', async (ctx) => {
   const userId = ctx.from!.id.toString();
   
-  // 查询用户记忆点数
+  // 查询用户生存算力
   const { data: partner } = await supabase
     .from('ai_partners')
     .select('memory_points, partner_name')
@@ -611,7 +611,7 @@ bot.hears('💫 查看记忆', async (ctx) => {
     .limit(10);
 
   let message = `💫 ${partner.partner_name} 的记忆\n\n`;
-  message += `当前记忆点数：${partner.memory_points}\n\n`;
+  message += `当前生存算力：${partner.memory_points}\n\n`;
   message += '最近记录：\n';
   
   if (logs && logs.length > 0) {
@@ -697,7 +697,7 @@ bot.hears('📅 每日签到', async (ctx) => {
     .select()
     .single();
 
-  // 增加记忆点数
+  // 增加生存算力
   await supabase.rpc('update_memory_points', {
     p_user_id: userId,
     p_change: 1,
@@ -705,7 +705,7 @@ bot.hears('📅 每日签到', async (ctx) => {
   });
 
   await ctx.reply(
-    `签到成功！连续签到 ${signin.streak_days} 天，获得 +1 记忆点数。`,
+    `签到成功！连续签到 ${signin.streak_days} 天，获得 +1 生存算力。`,
     { reply_markup: mainMenuKeyboard }
   );
 });

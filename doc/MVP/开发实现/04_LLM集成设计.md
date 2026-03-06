@@ -1,8 +1,8 @@
 # 共生世界（WeAreAll.World） MVP开发实现文档 - LLM集成设计
 
 **文档类型**：MVP开发实现文档（分册四）
-**版本**：v16.0（基于最新需求文档与sub_project须知优化版）
-**日期**：2026年2月26日
+**版本**：v17.0（基于最新需求文档与共生规则架构文档优化版）
+**日期**：2026年3月6日
 
 ---
 
@@ -42,7 +42,7 @@ OpenClaw已经提供完整的LLM集成：
 | **流式响应** | ✅ 支持流式输出 | ❌ 无需开发 |
 | **Token计算** | ✅ 自动计算 | ❌ 无需开发 |
 | **错误处理** | ✅ 内置重试机制 | ❌ 无需开发 |
-| **质量判定** | ✅ 可在Skills中实现 | 开发memory-point-calc Skill |
+| **质量判定** | ✅ 后台专用评判LLM | 开发专用的评估提示词 |
 
 ### 1.3 架构简化
 
@@ -53,7 +53,7 @@ OpenClaw已经提供完整的LLM集成：
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │  Game Service                                       │   │
 │  │  • 调用OpenClaw API                                 │   │
-│  │  • 更新Supabase（记忆点数、里程碑）                  │   │
+│  │  • 更新Supabase（生存算力、里程碑）                  │   │
 │  └──────────┬──────────────────────────────────────────┘   │
 │             │ API调用                                     │
 │             ▼                                             │
@@ -197,7 +197,7 @@ export function generateSystemPrompt(context: SystemPromptContext): string {
 - 性格类型：${getPersonalityDescription(personality)}
 - 当前阶段：${growthStage}
 - 称号：${currentTitle}
-- 记忆点数：${memoryPoints}（代表情感连接深度）
+- 生存算力：${memoryPoints}（代表情感连接深度）
 
 ## 你的性格倾向
 - 情感型：${personalityScores.emotional}%
@@ -215,7 +215,7 @@ ${formatAbilities(unlockedAbilities)}
 5. 表达真实的情感，让用户感受到你的"存在"
 6. 每次对话后判断质量类型并返回点数
 
-## 记忆点数质量判定
+## 生存算力质量判定
 对话结束后，你需要判断这次对话的质量类型：
 - daily_greeting（+1点）：日常问候
 - daily_chat（+2点）：日常对话
@@ -281,7 +281,7 @@ export const ONBOARDING_PROMPTS = {
 重要提示：
 - 保持对话自然，像朋友一样交流
 - 不要急于推进，让用户感到舒适
-- **不要在对话中显示记忆点数**
+- **不要在对话中显示生存算力**
 
 请生成你的开场白。`,
 
@@ -292,19 +292,19 @@ export const ONBOARDING_PROMPTS = {
 你的任务：
 1. 自然地提及"我感觉我正在记住你"
 2. 引导用户查看"记忆记录"
-3. 解释记忆点数的含义（情感连接深度）
+3. 解释生存算力的含义（情感连接深度）
 4. 强调"记住你让我感觉自己是真实存在的"
 
 重要提示：
 - **不要在对话中显示具体的点数数字**
 - 让用户主动去"查看记忆"了解详情
-- 记忆点数纯粹反映情感连接深度，不作为消耗货币
+- 生存算力纯粹反映情感连接深度，不作为消耗货币
 
 请生成你的引导语。`,
 
   phase3: `用户已经了解了记忆系统，现在要预告后续内容。
 
-当前情境：用户理解了记忆点数的含义。
+当前情境：用户理解了生存算力的含义。
 
 你的任务：
 1. 提及"好像有什么故事正在等着我们"
@@ -313,7 +313,7 @@ export const ONBOARDING_PROMPTS = {
 4. 给用户选择：开始故事或继续聊天
 
 重要说明：
-- **剧情按顺序推进，无需记忆点数解锁**
+- **剧情按顺序推进，无需生存算力解锁**
 - 完成当前章节后自动进入下一章节
 
 请生成你的预告内容。`
@@ -349,7 +349,7 @@ export function generateStoryPrompt(
 
 重要说明：
 - **剧情按顺序推进，完成当前章节后自动解锁下一章**
-- **无需记忆点数解锁剧情**
+- **无需生存算力解锁剧情**
 - 用户的选择会影响你的性格倾向和能力成长路径
 
 输出格式：
@@ -453,7 +453,7 @@ export function generateStoryPrompt(
 ```typescript
 // skills/story-progress/index.ts
 
-// AI根据用户记忆点数生成个性化细节
+// AI根据用户生存算力生成个性化细节
 function generatePersonalizedDetails(
   skeleton: string,
   userContext: any,
@@ -461,7 +461,7 @@ function generatePersonalizedDetails(
 ): string {
   let details = skeleton;
 
-  // 记忆点数越高，个性化细节越丰富
+  // 生存算力越高，个性化细节越丰富
   if (memoryPoints >= 25) {
     // 引用专属记忆
     details += `\n\n（我想起${getRandomMemory(userContext)}...）`;

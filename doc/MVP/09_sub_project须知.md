@@ -34,7 +34,7 @@
 | 项目 | 定位 | 职责 | 技术栈 |
 |-----|------|------|--------|
 | **子项目** | 云版OpenClaw | 提供OpenClaw的云部署能力，包括每用户独立Pod、PVC持久化、竞价实例、网络隔离等基础设施 | Kubernetes YAML、Docker、华为云CCI |
-| **主项目** | 基于OpenClaw的游戏 | 在OpenClaw基础上构建游戏逻辑，包括记忆点数系统、剧情引擎、养成机制、中央系统评估等 | Node.js/TypeScript、OpenClaw Skills |
+| **主项目** | 基于OpenClaw的游戏 | 在OpenClaw基础上构建游戏逻辑，包括生存算力系统、剧情引擎、养成机制、中央系统评估等 | Node.js/TypeScript、OpenClaw Skills |
 
 ### 1.2 子项目核心职责
 
@@ -56,7 +56,7 @@
    - 记忆管理（短期/长期记忆）
    - 技能系统（Skills框架）
    - 工具调用（浏览器、文件操作等）
-   - 实用能力增强（基于记忆点数的个性化服务）
+   - 实用能力增强（基于生存算力的个性化服务）
 
 ### 1.3 核心原则
 
@@ -73,7 +73,7 @@
 │                              主项目（游戏）                                  │
 │                                                                             │
 │  游戏业务逻辑：                                                              │
-│  • 记忆点数系统（质量判定、里程碑奖励）                                      │
+│  • 生存算力系统（质量判定、里程碑奖励）                                      │
 │  • 剧情引擎（人工骨架+AI细节、分支管理）                                     │
 │  • 养成机制（能力解锁、专属记忆）                                            │
 │  • 中央系统评估（活跃度检查、休眠机制）                                      │
@@ -82,8 +82,8 @@
 │  OpenClaw Skills（游戏技能）：                                               │
 │  • 情感表达技能（emotion-express）                                           │
 │  • 剧情推进技能（story-progress）                                            │
-│  • 记忆点数计算技能（memory-point-calc）                                       │
-│  • 实用能力技能（复用OpenClaw内置能力，根据记忆点数增强）                        │
+│  • 生存算力计算技能（memory-point-calc）                                       │
+│  • 实用能力技能（复用OpenClaw内置能力，根据生存算力增强）                        │
 └────────────────────────────────────────┬────────────────────────────────────┘
                                           │
                                           ▼
@@ -113,7 +113,7 @@
 |-----|----------------|----------------------|
 | **定位** | 基于OpenClaw构建的游戏 | 云版OpenClaw基础设施 |
 | **职责** | 游戏业务逻辑、游戏Skills开发 | OpenClaw云部署、基础设施管理 |
-| **数据存储** | Supabase（用户信息、记忆点数、剧情进度） | PVC（OpenClaw工作目录、对话历史、长期记忆） |
+| **数据存储** | Supabase（用户信息、生存算力、剧情进度） | PVC（OpenClaw工作目录、对话历史、长期记忆） |
 | **数据库表** | users, ai_partners, story_progress, memory_points | 无独立表，使用主项目数据 |
 | **通信方式** | 通过K8s Service调用用户OpenClaw Pod | 提供HTTP API（/api/chat, /api/memory, /api/skills）供主项目调用 |
 | **配置管理** | 游戏配置、剧情骨架、Prompt模板 | OpenClaw配置（openclaw-config.yml）、游戏配置（game-config.yml）、Skills配置 |
@@ -200,7 +200,7 @@ OpenClaw是一个开源的、可自托管的AI助手/智能体平台，不仅仅
 |-------|-----|------|
 | **工作目录** | `/home/node/.openclaw/workspace` | OpenClaw工作目录，挂载PVC |
 | **配置文件** | `/app/config/openclaw-config.yml` | OpenClaw主配置文件 |
-| **游戏配置** | `/app/config/game-config.yml` | 游戏专属配置（记忆点数、剧情、里程碑等） |
+| **游戏配置** | `/app/config/game-config.yml` | 游戏专属配置（生存算力、剧情、里程碑等） |
 | **Gateway端口** | 18789 | 仅集群内访问，严禁暴露公网 |
 | **生命周期** | 持续运行 | 用户不活跃时仍保持运行（保证响应速度） |
 | **LLM模型** | gpt-4o-mini（MVP阶段） | 低成本模型，后续可升级 |
@@ -386,7 +386,7 @@ spec:
 |---------|---------|--------|------|
 | **用户信息** | Supabase (users表) | 主项目 | 永久 |
 | **AI伙伴状态** | Supabase (ai_partners表) | 主项目 | 永久 |
-| **记忆点数** | Supabase (memory_points表) | 主项目 | 永久 |
+| **生存算力** | Supabase (memory_points表) | 主项目 | 永久 |
 | **剧情进度** | Supabase (story_progress表) | 主项目 | 永久 |
 | **对话历史** | PVC (workspace/conversations/) | 子项目 | 30天 |
 | **短期记忆** | PVC (workspace/memory/short-term/) | 子项目 | 自动管理 |
@@ -401,7 +401,7 @@ spec:
 ```typescript
 interface UserContext {
   userId: string;
-  memoryPoints: number;           // 记忆点数
+  memoryPoints: number;           // 生存算力
   personalityType: string;        // AI性格类型
   growthStage: string;            // 成长阶段
   recentMemories: Memory[];       // 近期记忆
@@ -478,7 +478,7 @@ const response = await fetch(`http://user-svc-${userId}:18789/api/chat`, {
             ├── 情感状态更新
             ├── LLM API生成回复
             └── 返回响应
-        → 管理沙箱更新数据库（记忆点数、里程碑等）
+        → 管理沙箱更新数据库（生存算力、里程碑等）
         → Telegram发送回复
 ```
 

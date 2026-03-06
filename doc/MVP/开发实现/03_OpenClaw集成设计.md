@@ -1,8 +1,8 @@
 # 共生世界（WeAreAll.World） MVP开发实现文档 - OpenClaw集成设计
 
 **文档类型**：MVP开发实现文档（分册三）
-**版本**：v16.0（基于最新需求文档与sub_project须知优化版）
-**日期**：2026年2月26日
+**版本**：v17.0（基于最新需求文档与共生规则架构文档优化版）
+**日期**：2026年3月6日
 
 ---
 
@@ -51,7 +51,7 @@
 |------|------|--------|--------|
 | `emotion-express` | 根据情感状态生成情感化回复 | 低 | P0 |
 | `story-progress` | 推进剧情、管理剧情分支、AI细节生成 | 中 | P0 |
-| `memory-point-calc` | 计算对话质量、返回点数 | 低 | P1 |
+| `memory-point-calc` | 计算对话质量、防刷降权、返回算力及类别 | 高 | P1 |
 | `personal-knowledge` | 个性化知识库管理（偏好记忆、背景记忆、目标记忆、关系记忆、历史记忆） | 高 | P1 |
 | `style-adaptation` | 风格适配系统（详细程度、语言风格、解释方式、偏好格式、节奏偏好） | 中 | P1 |
 | `context-continuity` | 上下文延续系统（任务延续、目标延续、偏好延续、关系延续、成长延续） | 高 | P1 |
@@ -64,7 +64,7 @@
 │                                                             │
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │  Game Service                                       │   │
-│  │  • 记忆点数计算（调用OpenClaw Skill）                │   │
+│  │  • 生存算力计算（调用OpenClaw Skill）                │   │
 │  │  • 里程碑检查（查询Supabase）                        │   │
 │  │  • 剧情进度管理（查询Supabase）                      │   │
 │  │  • 中央系统评估（定时任务）                          │   │
@@ -178,7 +178,7 @@ game:
   name: "共生世界（WeAreAll.World）"
   version: "1.0.0"
   
-  # 记忆点数配置
+  # 生存算力配置
   memory_points:
     quality_thresholds:
       daily_greeting: 1      # 日常问候
@@ -255,7 +255,7 @@ game:
 
 ### 3.2 emotion-express Skill（情感表达）
 
-**功能**：根据AI情感状态和记忆点数生成情感化回复
+**功能**：根据AI情感状态和生存算力生成情感化回复
 
 ```yaml
 # skills/emotion-express/skill.yml
@@ -306,7 +306,7 @@ export default class EmotionExpressSkill extends Skill {
     const config = emotionConfig[emotionState] || emotionConfig.normal;
     const randomEmoji = config.emoji[Math.floor(Math.random() * config.emoji.length)];
     
-    // 记忆点数越高，情感表达越丰富
+    // 生存算力越高，情感表达越丰富
     let enhancedResponse = baseResponse;
     if (memoryPoints >= 50) {
       enhancedResponse = `${baseResponse}\n\n${randomEmoji}`;
@@ -427,7 +427,7 @@ export default class StoryProgressSkill extends Skill {
       throw new Error(`Scene ${sceneId} not found`);
     }
     
-    // 根据用户记忆点数和专属记忆生成个性化细节
+    // 根据用户生存算力和专属记忆生成个性化细节
     let personalizedContent = scene.content;
     
     if (userContext.memory_points >= 25) {
@@ -502,12 +502,12 @@ export default class StoryProgressSkill extends Skill {
 
 ### 3.4 memory-point-calc Skill（点数计算）
 
-**功能**：判定对话质量并计算记忆点数
+**功能**：判定对话质量并计算生存算力
 
 ```yaml
 # skills/memory-point-calc/skill.yml
 name: memory-point-calc
-description: 对话质量判定和记忆点数计算
+description: 对话质量判定和生存算力计算
 version: 1.0.0
 
 actions:
@@ -531,6 +531,10 @@ actions:
         - name: points
           type: integer
         - name: reason
+          type: string
+        - name: data_rarity
+          type: string
+        - name: extracted_memory
           type: string
 ```
 
@@ -634,7 +638,7 @@ LLM生成回复
     ↓
 返回响应给管理沙箱
     ↓
-管理沙箱更新Supabase（记忆点数、里程碑）
+管理沙箱更新Supabase（生存算力、里程碑）
     ↓
 Telegram发送回复给用户
 ```
@@ -647,7 +651,7 @@ Telegram发送回复给用户
 | **短期记忆** | PVC (`conversations/*.jsonl`) | OpenClaw | 自动管理，无需同步 |
 | **长期记忆** | PVC (`memory/*.md`) | OpenClaw Skills | Skills创建和管理 |
 | **用户偏好** | PVC (`memory/PREFERENCES.md`) | OpenClaw Skills | Skills创建和管理 |
-| **记忆点数** | Supabase (`ai_partners`) | 管理沙箱 | 需要查询和统计 |
+| **生存算力** | Supabase (`ai_partners`) | 管理沙箱 | 需要统计、计算里程碑 |
 | **AI状态** | Supabase (`ai_partners`) | 管理沙箱 | 需要查询和更新 |
 | **剧情进度** | Supabase (`story_progress`) | 管理沙箱 | 需要查询和更新 |
 
@@ -730,7 +734,7 @@ Skills创建的用户画像：
 - 用户ID: user-123
 - 首次互动: 2026-02-24
 - 互动天数: 30天
-- 当前记忆点数: 85
+- 当前生存算力: 85
 
 ## 性格特点
 - 喜欢简洁的回复风格
