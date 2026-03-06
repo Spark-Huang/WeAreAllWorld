@@ -109,7 +109,7 @@ OpenClaw 的记忆很有特点，大致分两层【turn0search7】【turn0search
   - 然后通过 Deployment/Service 等资源管理生命周期【turn0search18】【turn0search26】。
 
 对本项目的意义：  
-- 我们在华为云 CCE 上做的事情，本质上是：  
+- 我们在云服务 CCE 上做的事情，本质上是：  
   - 把“个人用户手动在自己机器上部署 OpenClaw”的过程，变成一个多租户 SaaS：  
     - 用户一键注册/绑定  
     - 后端自动为每个用户创建独立的 OpenClaw 容器 + 存储卷  
@@ -135,7 +135,7 @@ OpenClaw 的记忆很有特点，大致分两层【turn0search7】【turn0search
      - 调用大模型进行推理；  
      - 使用内置或自定义 Skills 执行任务（浏览器、文件、邮件等）；  
      - 把结果和状态写回 Gateway，由我们的 Bot 网关发回 Telegram。  
-   - Supabase + 华为云 CCE 围绕着它做：  
+   - Supabase + 云服务 CCE 围绕着它做：  
      - 用户管理（Auth + profiles 表）  
      - 实例管理（instances 表 + Edge Function）  
      - 容器编排（Deployment/PVC/Secret/Service）。

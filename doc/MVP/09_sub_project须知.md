@@ -33,7 +33,7 @@
 
 | 项目 | 定位 | 职责 | 技术栈 |
 |-----|------|------|--------|
-| **子项目** | 云版OpenClaw | 提供OpenClaw的云部署能力，包括每用户独立Pod、PVC持久化、竞价实例、网络隔离等基础设施 | Kubernetes YAML、Docker、华为云CCI |
+| **子项目** | 云版OpenClaw | 提供OpenClaw的云部署能力，包括每用户独立Pod、PVC持久化、竞价实例、网络隔离等基础设施 | Kubernetes YAML、Docker、云服务CCI |
 | **主项目** | 基于OpenClaw的游戏 | 在OpenClaw基础上构建游戏逻辑，包括贡献值系统、剧情引擎、养成机制、中央系统评估等 | Node.js/TypeScript、OpenClaw Skills |
 
 ### 1.2 子项目核心职责
@@ -46,7 +46,7 @@
    - 实现每用户独立OpenClaw实例
 
 2. **基础设施管理**
-   - 华为云CCI Serverless Kubernetes配置
+   - 云服务CCI Serverless Kubernetes配置
    - 竞价实例（Spot）管理
    - PVC持久化存储管理
    - NetworkPolicy网络隔离
@@ -62,7 +62,7 @@
 
 - **每用户独立沙箱**：每个用户拥有独立的OpenClaw Pod，数据隔离
 - **强隔离**：每个用户必须拥有独立的容器，严禁多用户共享同一个OpenClaw进程
-- **Serverless架构**：使用华为云CCI，无需管理节点，按秒计费
+- **Serverless架构**：使用云服务CCI，无需管理节点，按秒计费
 - **竞价实例**：使用Spot实例降低成本
 - **持久化存储**：使用PVC保存用户数据，Pod重启/迁移后数据不丢失
 
@@ -192,7 +192,7 @@ OpenClaw是一个开源的、可自托管的AI助手/智能体平台，不仅仅
 |---------|------|---------|
 | **个人部署** | 在个人电脑/云服务器上用Docker或直接安装 | 个人使用、开发测试 |
 | **Kubernetes部署** | 打包成容器，通过Deployment/Service管理生命周期 | 企业级部署 |
-| **本项目部署（云版）** | 在华为云CCI上实现多租户SaaS，每个用户独立的OpenClaw实例 | 游戏MVP |
+| **本项目部署（云版）** | 在云服务CCI上实现多租户SaaS，每个用户独立的OpenClaw实例 | 游戏MVP |
 
 ### 2.4 关键配置
 
@@ -214,9 +214,9 @@ OpenClaw是一个开源的、可自托管的AI助手/智能体平台，不仅仅
 
 | 资源 | 选型 | 说明 |
 |-----|------|------|
-| **云服务** | 华为云CCI（云容器实例） | Serverless Kubernetes |
+| **云服务** | 云服务CCI（云容器实例） | Serverless Kubernetes |
 | **计费方式** | 按秒计费，支持竞价实例（Spot） | 成本优化 |
-| **存储** | 华为云EVS（云硬盘） | 支持PVC持久化存储 |
+| **存储** | 云服务EVS（云硬盘） | 支持PVC持久化存储 |
 | **特点** | 无需管理节点，自动扩缩容 | 运维简化 |
 
 ### 3.2 Kubernetes资源模板
@@ -414,7 +414,7 @@ interface UserContext {
 ### 4.4 数据备份与恢复
 
 **PVC自动备份**：
-- 华为云EVS支持定期快照
+- 云服务EVS支持定期快照
 - Pod重启后自动从PVC恢复数据
 - 竞价实例回收后数据不丢失
 
@@ -606,7 +606,7 @@ rules:
 - 按秒计费
 - 成本：100 × 30% × 50元 = ~150元/月
 
-存储（华为云EVS）：
+存储（云服务EVS）：
 - 100用户 × 5GB
 - 成本：~50元/月
 
@@ -627,7 +627,7 @@ Supabase：
 
 ### Phase 1：基础设施搭建
 
-- [ ] 创建华为云CCI集群，配置kubectl访问
+- [ ] 创建云服务CCI集群，配置kubectl访问
 - [ ] 创建Supabase项目，配置Auth（Phone）
 - [ ] 创建Telegram Bot，获取Token
 - [ ] 配置OpenClaw Docker镜像

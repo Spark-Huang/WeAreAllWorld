@@ -29,7 +29,7 @@ Telegram Bot 是主项目“管理沙箱 (Control Plane)”对外的直接触角
 
 ## 2. 核心路由分发机制 (Webhook)
 
-使用轻量级的 Node.js 框架（如 `grammy` 或 `telegraf`）结合 Webhook 方式部署在华为云 Serverless 容器中。
+使用轻量级的 Node.js 框架（如 `grammy` 或 `telegraf`）结合 Webhook 方式部署在云服务 Serverless 容器中。
 
 ```typescript
 bot.on('message:text', async (ctx) => {
