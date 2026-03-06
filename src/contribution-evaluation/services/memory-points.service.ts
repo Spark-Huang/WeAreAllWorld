@@ -125,8 +125,10 @@ export class MemoryPointsService {
       const { data, error } = await this.supabase.rpc('update_contribution', {
         p_user_id: userId,
         p_points: points,
-        p_source_type: sourceType,
-        p_source_detail: sourceDetail || null
+        p_category: sourceType,
+        p_data_rarity: sourceDetail || null,
+        p_ai_understanding: null,
+        p_message_hash: null
       });
       
       if (error) {
@@ -136,15 +138,21 @@ export class MemoryPointsService {
       
       const result = data as any;
       
+      // 处理错误返回
+      if (result?.error) {
+        console.error('更新贡献值失败:', result.error);
+        return this.createErrorResult(points);
+      }
+      
       return {
         success: true,
-        previousPoints: result.previous_points,
-        newPoints: result.new_points,
-        pointsAdded: result.points_added,
-        milestonesReached: this.parseMilestones(result.milestones_reached),
-        abilitiesUpdated: result.abilities_updated,
-        growthStage: this.getGrowthStage(result.new_points),
-        currentTitle: this.getTitle(result.new_points)
+        previousPoints: result.previous_total || 0,
+        newPoints: result.new_total || 0,
+        pointsAdded: points,
+        milestonesReached: this.parseMilestones(result.milestones),
+        abilitiesUpdated: result.abilities_updated || false,
+        growthStage: this.getGrowthStage(result.new_total || 0),
+        currentTitle: this.getTitle(result.new_total || 0)
       };
     } catch (err) {
       console.error('更新贡献值异常:', err);

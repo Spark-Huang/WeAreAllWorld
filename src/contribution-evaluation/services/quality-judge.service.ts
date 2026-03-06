@@ -210,12 +210,12 @@ export class QualityJudgeService {
    */
   private shouldCreateMemory(qualityType: string, message: string): boolean {
     // 特殊回忆和深度思考应该创建记忆
-    if (['special_memory', 'deep_thinking'].includes(qualityType)) {
+    if (['special_memory', 'deep_thought'].includes(qualityType)) {
       return true;
     }
     
     // 分享经历且消息较长，也应该创建记忆
-    if (qualityType === 'share_experience' && message.length >= 30) {
+    if (qualityType === 'experience' && message.length >= 30) {
       return true;
     }
     
