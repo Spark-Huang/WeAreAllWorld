@@ -122,7 +122,7 @@ export class MemoryPointsService {
   ): Promise<UpdatePointsResult> {
     try {
       // 调用数据库函数更新点数
-      const { data, error } = await this.supabase.rpc('update_memory_points', {
+      const { data, error } = await this.supabase.rpc('update_contribution', {
         p_user_id: userId,
         p_points: points,
         p_source_type: sourceType,

@@ -200,7 +200,7 @@ export class UserService {
   /**
    * 获取当前引导步骤
    */
-  getCurrentOnboardingStep(currentStep: number): OnboardingStep | null {
+  getCurrentOnboardingStep(currentStep: number): Omit<OnboardingStep, 'completed'> | null {
     return ONBOARDING_STEPS.find(s => s.step === currentStep) || null;
   }
   

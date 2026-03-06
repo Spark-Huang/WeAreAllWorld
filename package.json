@@ -8,8 +8,9 @@
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn src/index.ts",
     "test": "jest",
+    "test:unit": "ts-node scripts/unit-test.ts",
     "test:security": "ts-node scripts/security-test.ts",
-    "test:security:ci": "SUPABASE_SERVICE_KEY=$SUPABASE_SERVICE_KEY ts-node scripts/security-test.ts",
+    "test:all": "ts-node scripts/unit-test.ts && ts-node scripts/security-test.ts",
     "lint": "eslint src/**/*.ts"
   },
   "dependencies": {

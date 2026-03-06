@@ -242,7 +242,7 @@ export class CentralEvaluationService {
     let errors = 0;
     
     for (const ai of dormantAIs || []) {
-      const result = await this.decayDormantAI(ai.user_id);
+      const result = await this.decayHibernatedAI(ai.user_id);
       results.push(result);
       
       if (result.success) {
@@ -276,14 +276,15 @@ export class CentralEvaluationService {
       if (error) {
         console.error(`唤醒用户 ${userId} 失败:`, error);
         return {
-          success: false,
-          userId,
-          daysDormant: 0,
-          pointsLost: 0,
-          pointsReturned: 0,
-          newPoints: 0,
-          message: '唤醒失败，请稍后重试'
-        };
+        success: false,
+        userId,
+        daysHibernated: 0,
+        powerLost: 0,
+        powerReturned: 0,
+        newPower: 0,
+        usedFreeWakeup: false,
+        message: '唤醒失败，请稍后重试'
+      };
       }
       
       const result = data as any;
@@ -291,12 +292,13 @@ export class CentralEvaluationService {
       return {
         success: result.success,
         userId,
-        daysDormant: result.days_dormant,
-        pointsLost: result.points_lost,
-        pointsReturned: result.points_returned,
-        newPoints: result.new_points,
+        daysHibernated: result.days_dormant || result.days_hibernated || 0,
+        powerLost: result.points_lost || result.power_lost || 0,
+        powerReturned: result.points_returned || result.power_returned || 0,
+        newPower: result.new_points || result.new_power || 0,
+        usedFreeWakeup: result.used_free_wakeup || false,
         message: result.success 
-          ? `AI已唤醒！休眠${result.days_dormant}天，返还${result.points_returned}点贡献值`
+          ? `AI已唤醒！休眠${result.days_dormant || result.days_hibernated || 0}天，返还${result.points_returned || result.power_returned || 0}点贡献值`
           : 'AI未处于休眠状态'
       };
     } catch (err) {
@@ -304,10 +306,11 @@ export class CentralEvaluationService {
       return {
         success: false,
         userId,
-        daysDormant: 0,
-        pointsLost: 0,
-        pointsReturned: 0,
-        newPoints: 0,
+        daysHibernated: 0,
+        powerLost: 0,
+        powerReturned: 0,
+        newPower: 0,
+        usedFreeWakeup: false,
         message: '唤醒失败，请稍后重试'
       };
     }
@@ -345,12 +348,12 @@ export class CentralEvaluationService {
     
     return {
       weekStart: result.week_start,
-      pointsGrown: result.points_grown,
-      dialogueCount: result.dialogue_count,
-      signinCount: result.signin_count,
-      threshold: result.threshold,
-      progressPercent: result.progress_percent,
-      daysRemaining
+      weeklyContribution: result.points_grown || result.weekly_contribution || 0,
+      dialogueCount: result.dialogue_count || 0,
+      signinCount: result.signin_count || 0,
+      requiredContribution: result.threshold || result.required_contribution || 15,
+      progressPercent: result.progress_percent || 0,
+      activityLevel: result.activity_level || 'basic'
     };
   }
   
@@ -424,10 +427,11 @@ export class CentralEvaluationService {
       userId,
       weekStart: '',
       weekEnd: '',
-      pointsGrown: 0,
-      threshold: this.THRESHOLD,
-      result: 'warning',
-      consecutiveWarnings: 0,
+      achievedContribution: 0,
+      requiredContribution: this.THRESHOLD,
+      passed: false,
+      actionTaken: 'none',
+      violationCount: 0,
       statusBefore: '',
       statusAfter: '',
       message: `评估失败: ${errorMessage}`
