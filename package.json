@@ -1,0 +1,46 @@
+{
+  "name": "weareallworld",
+  "version": "1.0.0",
+  "description": "共生世界 - AI nurturing + text adventure + practical assistant platform",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node-dev --respawn src/index.ts",
+    "db:init": "ts-node scripts/init-database.ts",
+    "db:seed": "ts-node scripts/seed-database.ts",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "telegraf": "^4.16.0",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/node-cron": "^3.0.11",
+    "typescript": "^5.3.0",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.55.0",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.11",
+    "ts-jest": "^29.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "ai",
+    "chatbot",
+    "telegram",
+    "game",
+    "nurturing"
+  ],
+  "author": "Spark-Huang",
+  "license": "MIT"
+}
