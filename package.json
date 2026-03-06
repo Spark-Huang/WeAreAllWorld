@@ -10,6 +10,8 @@
     "db:init": "ts-node scripts/init-database.ts",
     "db:seed": "ts-node scripts/seed-database.ts",
     "test": "jest",
+    "test:db": "ts-node scripts/test-supabase.ts",
+    "test:db:ci": "SUPABASE_SERVICE_KEY=$SUPABASE_SERVICE_KEY ts-node scripts/test-supabase.ts",
     "lint": "eslint src/**/*.ts"
   },
   "dependencies": {
