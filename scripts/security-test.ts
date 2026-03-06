@@ -815,17 +815,25 @@ async function testSecurityPenetration(): Promise<void> {
   }
 
   // 攻击者尝试修改受害者数据
+  // 注意：RLS会静默过滤，不返回错误，需要检查数据是否被修改
   const { error: updateErr } = await anonClient
     .from('ai_partners')
     .update({ total_contribution: 999999 })
     .eq('user_id', victimId);
 
-  if (!updateErr) {
+  // 验证数据是否被修改（用admin client检查）
+  const { data: victimAfterUpdate } = await adminClient
+    .from('ai_partners')
+    .select('total_contribution')
+    .eq('user_id', victimId)
+    .single();
+
+  if (victimAfterUpdate && victimAfterUpdate.total_contribution === 999999) {
     log({
       category: '安全',
       name: 'RLS防护 - 跨用户数据修改',
       passed: false,
-      message: '攻击者可以修改其他用户数据！',
+      message: '攻击者成功修改了其他用户数据！',
       severity: 'critical'
     });
   } else {
@@ -833,7 +841,7 @@ async function testSecurityPenetration(): Promise<void> {
       category: '安全',
       name: 'RLS防护 - 跨用户数据修改',
       passed: true,
-      message: 'RLS正确阻止了跨用户修改',
+      message: 'RLS正确阻止了跨用户修改（数据未被修改）',
       severity: 'critical'
     });
   }
