@@ -20,6 +20,7 @@ export interface QualityResult {
   keyInfo: string | null;
   shouldCreateMemory: boolean;
   memoryContent: string | null;
+  dataRarity: string;  // 数据稀缺度评级
 }
 
 export interface QualityRule {
@@ -29,7 +30,8 @@ export interface QualityRule {
   maxLength?: number;
   points: number;
   reason: string;
-  priority: number;  // 优先级，数字越大优先级越高
+  priority: number;
+  dataRarity: string;  // 数据稀缺度评级
 }
 
 /**
@@ -43,48 +45,64 @@ const QUALITY_RULES: QualityRule[] = [
     minLength: 15,
     points: 8,
     reason: '分享了特殊回忆',
-    priority: 100
+    priority: 100,
+    dataRarity: '[绝版·专属生命记忆]'
   },
   
   // 深度思考
   {
-    type: 'deep_thinking',
+    type: 'deep_thought',
     keywords: ['我认为', '我觉得', '观点', '看法', '思考', '理解', '感悟', '体会', '人生意义', '价值观', '信仰', '理想'],
     minLength: 20,
     points: 5,
     reason: '分享了深度思考',
-    priority: 80
+    priority: 80,
+    dataRarity: '[典藏级·人类独有思维特征]'
   },
   
   // 分享经历
   {
-    type: 'share_experience',
+    type: 'experience',
     keywords: ['今天', '昨天', '前天', '工作', '学习', '发生', '遇到', '经历', '做了', '去了', '参加了'],
     minLength: 15,
     points: 4,
     reason: '分享了经历',
-    priority: 60
+    priority: 60,
+    dataRarity: '[珍贵·人类行为样本]'
   },
   
   // 情感表达
   {
-    type: 'emotion_expression',
+    type: 'emotion',
     keywords: ['开心', '高兴', '难过', '伤心', '累', '疲惫', '压力', '担心', '焦虑', '害怕', '恐惧', '生气', '愤怒', '失望', '沮丧', '兴奋', '激动', '感动', '幸福', '满足'],
     minLength: 5,
     points: 3,
     reason: '表达了情感',
-    priority: 40
+    priority: 40,
+    dataRarity: '[稀有·真实情感图谱]'
+  },
+  
+  // 日常对话
+  {
+    type: 'daily',
+    keywords: [],
+    minLength: 1,
+    points: 2,
+    reason: '日常对话',
+    priority: 20,
+    dataRarity: '活跃数据'
   },
   
   // 日常问候（最低优先级）
   {
-    type: 'daily_greeting',
+    type: 'greeting',
     keywords: ['早安', '晚安', '早上好', '晚上好', '你好', '在吗', '嗨', 'hi', 'hello'],
     minLength: 1,
     maxLength: 20,
     points: 1,
     reason: '日常问候',
-    priority: 10
+    priority: 10,
+    dataRarity: '普通数据'
   }
 ];
 
@@ -131,20 +149,22 @@ export class QualityJudgeService {
           emotionDetected,
           keyInfo,
           shouldCreateMemory,
-          memoryContent: shouldCreateMemory ? this.generateMemoryContent(normalizedMessage, rule.type) : null
+          memoryContent: shouldCreateMemory ? this.generateMemoryContent(normalizedMessage, rule.type) : null,
+          dataRarity: rule.dataRarity
         };
       }
     }
     
     // 默认返回日常对话
     return {
-      qualityType: 'daily_chat',
+      qualityType: 'daily',
       points: 2,
       reason: '日常对话',
       emotionDetected: 'neutral',
       keyInfo: null,
       shouldCreateMemory: false,
-      memoryContent: null
+      memoryContent: null,
+      dataRarity: '活跃数据'
     };
   }
   

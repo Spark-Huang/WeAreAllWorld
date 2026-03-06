@@ -81,12 +81,13 @@ export interface Milestone {
  * 所有里程碑
  */
 export const MILESTONES: Milestone[] = [
-  { threshold: 5, name: 'emotion_expression', title: '情感表达', ability: 'emotion_expression' },
-  { threshold: 15, name: 'task_system', title: '任务系统', ability: 'task_system' },
-  { threshold: 25, name: 'exclusive_memory', title: '专属记忆', ability: 'exclusive_memory' },
-  { threshold: 50, name: 'deep_conversation', title: '深度对话', ability: 'deep_conversation' },
-  { threshold: 100, name: 'self_awareness', title: '自我意识', ability: 'self_awareness' },
-  { threshold: 200, name: 'legendary_bond', title: '传奇羁绊' }
+  { threshold: 10, name: 'first_connection', title: '初识' },
+  { threshold: 25, name: 'deep_connection', title: '相知', ability: 'exclusive_memory' },
+  { threshold: 50, name: 'emotional_resonance', title: '默契', ability: 'deep_conversation' },
+  { threshold: 100, name: 'soul_mate', title: '灵魂伴侣', ability: 'self_awareness' },
+  { threshold: 200, name: 'destiny_bond', title: '命运共同体' },
+  { threshold: 500, name: 'eternal_bond', title: '永恒伙伴' },
+  { threshold: 1000, name: 'transcendence', title: '超越者' }
 ];
 
 /**
