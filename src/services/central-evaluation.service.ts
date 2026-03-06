@@ -21,10 +21,11 @@ export interface EvaluationResult {
   userId: string;
   weekStart: string;
   weekEnd: string;
-  pointsGrown: number;
-  threshold: number;
-  result: 'pass' | 'warning' | 'dormant';
-  consecutiveWarnings: number;
+  achievedPower: number;
+  requiredPower: number;
+  passed: boolean;
+  actionTaken: 'none' | 'warned' | 'hibernated' | 'woken_up' | 'decayed' | 'recycled';
+  violationCount: number;
   statusBefore: string;
   statusAfter: string;
   message: string;
@@ -33,30 +34,32 @@ export interface EvaluationResult {
 export interface DecayResult {
   success: boolean;
   userId: string;
-  previousPoints: number;
-  newPoints: number;
+  previousPower: number;
+  newPower: number;
   decayAmount: number;
   reachedZero: boolean;
+  status: 'hibernated' | 'recycled';
 }
 
 export interface WakeupResult {
   success: boolean;
   userId: string;
-  daysDormant: number;
-  pointsLost: number;
-  pointsReturned: number;
-  newPoints: number;
+  daysHibernated: number;
+  powerLost: number;
+  powerReturned: number;
+  newPower: number;
+  usedFreeWakeup: boolean;
   message: string;
 }
 
 export interface WeeklyStats {
   weekStart: string;
-  pointsGrown: number;
+  weeklyPower: number;
   dialogueCount: number;
   signinCount: number;
-  threshold: number;
+  requiredPower: number;
   progressPercent: number;
-  daysRemaining: number;
+  activityLevel: 'below_target' | 'basic' | 'active' | 'deep';
 }
 
 /**
@@ -93,10 +96,11 @@ export class CentralEvaluationService {
         userId,
         weekStart: result.week_start,
         weekEnd: result.week_end,
-        pointsGrown: result.points_grown,
-        threshold: result.threshold,
-        result: result.result,
-        consecutiveWarnings: result.consecutive_warnings,
+        achievedPower: result.achieved_power,
+        requiredPower: result.required_power,
+        passed: result.passed,
+        actionTaken: result.action_taken,
+        violationCount: result.violation_count,
         statusBefore: result.status_before,
         statusAfter: result.status_after,
         message: this.generateEvaluationMessage(result)
@@ -114,7 +118,7 @@ export class CentralEvaluationService {
     total: number;
     passed: number;
     warned: number;
-    dormant: number;
+    hibernated: number;
     errors: number;
     results: EvaluationResult[];
   }> {
@@ -133,7 +137,7 @@ export class CentralEvaluationService {
     const results: EvaluationResult[] = [];
     let passed = 0;
     let warned = 0;
-    let dormant = 0;
+    let hibernated = 0;
     let errors = 0;
     
     // 为每个用户执行评估
@@ -142,21 +146,21 @@ export class CentralEvaluationService {
       results.push(result);
       
       if (result.success) {
-        if (result.result === 'pass') passed++;
-        else if (result.result === 'warning') warned++;
-        else if (result.result === 'dormant') dormant++;
+        if (result.passed) passed++;
+        else if (result.actionTaken === 'warned') warned++;
+        else if (result.actionTaken === 'hibernated') hibernated++;
       } else {
         errors++;
       }
     }
     
-    console.log(`每周评估完成: 通过=${passed}, 警告=${warned}, 休眠=${dormant}, 错误=${errors}`);
+    console.log(`每周评估完成: 通过=${passed}, 警告=${warned}, 休眠=${hibernated}, 错误=${errors}`);
     
     return {
       total: users?.length || 0,
       passed,
       warned,
-      dormant,
+      hibernated,
       errors,
       results
     };
@@ -165,9 +169,9 @@ export class CentralEvaluationService {
   /**
    * 执行单个休眠AI的点数衰减
    */
-  async decayDormantAI(userId: string): Promise<DecayResult> {
+  async decayHibernatedAI(userId: string): Promise<DecayResult> {
     try {
-      const { data, error } = await this.supabase.rpc('run_dormant_decay', {
+      const { data, error } = await this.supabase.rpc('run_hibernation_decay', {
         p_user_id: userId
       });
       
@@ -176,10 +180,11 @@ export class CentralEvaluationService {
         return {
           success: false,
           userId,
-          previousPoints: 0,
-          newPoints: 0,
+          previousPower: 0,
+          newPower: 0,
           decayAmount: 0,
-          reachedZero: false
+          reachedZero: false,
+          status: 'hibernated'
         };
       }
       
@@ -188,20 +193,22 @@ export class CentralEvaluationService {
       return {
         success: result.success,
         userId,
-        previousPoints: result.previous_points,
-        newPoints: result.new_points,
+        previousPower: result.previous_power,
+        newPower: result.new_power,
         decayAmount: result.decay_amount,
-        reachedZero: result.reached_zero
+        reachedZero: result.reached_zero,
+        status: result.status
       };
     } catch (err) {
       console.error(`衰减用户 ${userId} 异常:`, err);
       return {
         success: false,
         userId,
-        previousPoints: 0,
-        newPoints: 0,
+        previousPower: 0,
+        newPower: 0,
         decayAmount: 0,
-        reachedZero: false
+        reachedZero: false,
+        status: 'hibernated'
       };
     }
   }
