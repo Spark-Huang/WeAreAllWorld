@@ -912,14 +912,15 @@ async function testSecurityPenetration(): Promise<void> {
   ];
 
   for (const input of invalidInputs) {
-    const { error } = await adminClient.rpc('update_contribution', input.value as any);
+    const { error, data } = await adminClient.rpc('update_contribution', input.value as any);
     
-    if (error) {
+    // 检查是否返回错误（RPC错误或函数返回的error字段）
+    if (error || (data && data.error)) {
       log({
         category: '安全',
         name: `无效输入拒绝: ${input.name}`,
         passed: true,
-        message: '正确拒绝了无效输入',
+        message: `正确拒绝了无效输入: ${error?.message || data?.error}`,
         severity: 'medium'
       });
     } else {
