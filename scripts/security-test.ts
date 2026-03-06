@@ -250,11 +250,10 @@ async function testFunctionalCompleteness(): Promise<void> {
     const { userId: milestoneUserId } = await createTestUser();
     
     const milestones = [
-      { points: 10, title: '初识', ability: null },
-      { points: 15, title: '初识', ability: null }, // 累计25
-      { points: 25, title: '相知', ability: 'exclusive_memory' },
-      { points: 25, title: '默契', ability: 'deep_conversation' }, // 累计75
-      { points: 25, title: '灵魂伴侣', ability: 'self_awareness' }, // 累计100
+      { points: 10, title: '初识', ability: null },          // 累计10
+      { points: 15, title: '相知', ability: 'exclusive_memory' }, // 累计25
+      { points: 25, title: '默契', ability: 'deep_conversation' }, // 累计50
+      { points: 50, title: '灵魂伴侣', ability: 'self_awareness' }, // 累计100
     ];
 
     let currentPoints = 0;
