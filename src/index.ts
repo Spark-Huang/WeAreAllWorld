@@ -4,7 +4,7 @@
 
 import 'dotenv/config';
 import { TelegramBotService } from './services/telegram-bot.service';
-import { ScheduledTaskService } from './services/scheduled-task.service';
+import { ScheduledTaskService } from './contribution-evaluation/services/scheduled-task.service';
 import { createClient } from '@supabase/supabase-js';
 
 // 环境变量

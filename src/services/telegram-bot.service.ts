@@ -9,12 +9,12 @@
  */
 
 import { Telegraf, Context, Markup } from 'telegraf';
-import { MemoryPointsService } from './memory-points.service';
-import { CentralEvaluationService } from './central-evaluation.service';
-import { ScheduledTaskService, NotificationPayload } from './scheduled-task.service';
+import { MemoryPointsService } from '../contribution-evaluation/services/memory-points.service';
+import { CentralEvaluationService } from '../contribution-evaluation/services/central-evaluation.service';
+import { ScheduledTaskService, NotificationPayload } from '../contribution-evaluation/services/scheduled-task.service';
 import { UserService, UserWithAI } from './user.service';
-import { qualityJudgeService } from './quality-judge.service';
-import { getTitle, getGrowthStage, getNextMilestone } from '../types';
+import { qualityJudgeService } from '../contribution-evaluation/services/quality-judge.service';
+import { getTitle, getGrowthStage, getNextMilestone } from '../contribution-evaluation/types';
 
 export interface BotConfig {
   telegramToken: string;
@@ -350,7 +350,7 @@ export class TelegramBotService {
         return;
       }
       
-      const isHibernated = aiPartner.status === 'hibernated' || aiPartner.status === 'recycled';
+      const isHibernated = userWithAI.aiPartner?.status === 'hibernated' || userWithAI.aiPartner?.status === 'recycled';
       
       if (!isHibernated) {
         await ctx.reply('你的AI伙伴并未处于休眠状态，可以正常对话！');
