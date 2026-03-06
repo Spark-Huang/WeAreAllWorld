@@ -26,9 +26,9 @@ export interface UserWithAI {
     id: string;
     name: string;
     personality: string;
-    totalSurvivalPower: number;      // 累计贡献值
-    currentSurvivalPower: number;    // 当前贡献值
-    weeklyNewPower: number;          // 本周新增贡献值
+    totalContribution: number;      // 累计贡献值
+    currentContribution: number;    // 当前贡献值
+    weeklyContribution: number;     // 本周新增贡献值
     growthStage: string;
     currentTitle: string;
     status: string;                  // active, hibernated, recycled

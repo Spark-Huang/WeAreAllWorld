@@ -61,9 +61,9 @@ CREATE TABLE IF NOT EXISTS public.ai_partners (
   CHECK (personality IN ('warm', 'humorous', 'rational', 'lively')),
   
   -- 核心状态 - v2.1更新
-  total_survival_power INTEGER DEFAULT 0 CHECK (total_survival_power >= 0),
-  current_survival_power INTEGER DEFAULT 0 CHECK (current_survival_power >= 0),
-  weekly_new_power INTEGER DEFAULT 0 CHECK (weekly_new_power >= 0),
+  total_contribution INTEGER DEFAULT 0 CHECK (total_contribution >= 0),
+  current_contribution INTEGER DEFAULT 0 CHECK (current_contribution >= 0),
+  weekly_contribution INTEGER DEFAULT 0 CHECK (weekly_contribution >= 0),
   
   -- 成长阶段
   growth_stage VARCHAR(20) DEFAULT '懵懂期',
@@ -101,15 +101,15 @@ CREATE TABLE IF NOT EXISTS public.ai_partners (
 
 CREATE INDEX IF NOT EXISTS idx_ai_partners_user_id ON public.ai_partners(user_id);
 CREATE INDEX IF NOT EXISTS idx_ai_partners_status ON public.ai_partners(status);
-CREATE INDEX IF NOT EXISTS idx_ai_partners_total_power ON public.ai_partners(total_survival_power DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_partners_total_contribution ON public.ai_partners(total_contribution DESC);
 CREATE INDEX IF NOT EXISTS idx_ai_partners_hibernated_since ON public.ai_partners(hibernated_since);
 
 ALTER TABLE public.ai_partners ENABLE ROW LEVEL SECURITY;
 
 COMMENT ON TABLE public.ai_partners IS 'AI伙伴状态表 v2.1';
-COMMENT ON COLUMN public.ai_partners.total_survival_power IS '累计总生存算力（只增不减，用于里程碑）';
-COMMENT ON COLUMN public.ai_partners.current_survival_power IS '当前生存算力（休眠会扣除）';
-COMMENT ON COLUMN public.ai_partners.weekly_new_power IS '本周新增生存算力（评估核算用，每周重置）';
+COMMENT ON COLUMN public.ai_partners.total_contribution IS '累计总贡献值（只增不减，用于里程碑）';
+COMMENT ON COLUMN public.ai_partners.current_contribution IS '当前贡献值（休眠会扣除）';
+COMMENT ON COLUMN public.ai_partners.weekly_contribution IS '本周新增贡献值（评估核算用，每周重置）';
 COMMENT ON COLUMN public.ai_partners.violation_count IS '连续未达标周数，达到2次进入休眠';
 
 -- ============================================

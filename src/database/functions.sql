@@ -6,7 +6,7 @@
 -- ============================================
 -- 1. 更新生存算力并检查里程碑
 -- ============================================
-CREATE OR REPLACE FUNCTION public.update_survival_power(
+CREATE OR REPLACE FUNCTION public.update_contribution(
   p_user_id UUID,
   p_points INTEGER,
   p_category VARCHAR DEFAULT 'daily',
@@ -27,7 +27,7 @@ DECLARE
   v_old_abilities JSONB;
 BEGIN
   -- 获取当前点数和能力
-  SELECT total_survival_power, weekly_new_power, abilities 
+  SELECT total_contribution, weekly_contribution, abilities 
   INTO v_current_total, v_current_weekly, v_old_abilities
   FROM public.ai_partners WHERE user_id = p_user_id;
   
@@ -41,9 +41,9 @@ BEGIN
   
   -- 更新点数
   UPDATE public.ai_partners
-  SET total_survival_power = v_new_total,
-      weekly_new_power = v_new_weekly,
-      current_survival_power = current_survival_power + p_points,
+  SET total_contribution = v_new_total,
+      weekly_contribution = v_new_weekly,
+      current_contribution = current_contribution + p_points,
       updated_at = NOW()
   WHERE user_id = p_user_id;
   
@@ -116,7 +116,7 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION public.update_survival_power IS '更新生存算力并检查里程碑 v2.1';
+COMMENT ON FUNCTION public.update_contribution IS '更新贡献值并检查里程碑 v2.1';
 
 -- ============================================
 -- 2. 每日签到函数
@@ -187,7 +187,7 @@ BEGIN
   
   -- 更新生存算力
   SELECT * INTO v_points_result
-  FROM public.update_survival_power(p_user_id, v_total_reward, 'signin', NULL, 
+  FROM public.update_contribution(p_user_id, v_total_reward, 'signin', NULL, 
     jsonb_build_object('type', 'daily_checkin', 'consecutive_days', v_consecutive_days), NULL);
   
   -- 更新用户连续登录天数
@@ -250,7 +250,7 @@ BEGIN
   END;
   
   -- 获取本周新增点数
-  SELECT weekly_new_power INTO v_achieved_power
+  SELECT weekly_contribution INTO v_achieved_power
   FROM public.ai_partners WHERE user_id = p_user_id;
   
   -- 判定结果
@@ -293,7 +293,7 @@ BEGIN
   
   -- 重置本周点数
   UPDATE public.ai_partners
-  SET weekly_new_power = 0
+  SET weekly_contribution = 0
   WHERE user_id = p_user_id;
   
   -- 记录评估历史
@@ -386,8 +386,8 @@ BEGIN
   
   -- 发放奖励点数
   UPDATE public.ai_partners
-  SET total_survival_power = total_survival_power + v_bonus_points,
-      current_survival_power = current_survival_power + v_bonus_points
+  SET total_contribution = total_contribution + v_bonus_points,
+      current_contribution = current_contribution + v_bonus_points
   WHERE user_id = p_user_id;
   
   RETURN jsonb_build_object(
@@ -419,7 +419,7 @@ DECLARE
   v_difficulty_mode VARCHAR(20);
 BEGIN
   -- 获取用户难度和当前点数
-  SELECT u.difficulty_mode, a.current_survival_power 
+  SELECT u.difficulty_mode, a.current_contribution 
   INTO v_difficulty_mode, v_current_power
   FROM public.users u
   JOIN public.ai_partners a ON a.user_id = u.id
@@ -441,7 +441,7 @@ BEGIN
   
   -- 更新点数
   UPDATE public.ai_partners
-  SET current_survival_power = v_new_power,
+  SET current_contribution = v_new_power,
       updated_at = NOW()
   WHERE user_id = p_user_id;
   
@@ -494,7 +494,7 @@ DECLARE
   v_difficulty_mode VARCHAR(20);
 BEGIN
   -- 检查是否处于休眠或回收状态
-  SELECT a.hibernated_since, a.current_survival_power, u.free_wakeup_count, u.difficulty_mode
+  SELECT a.hibernated_since, a.current_contribution, u.free_wakeup_count, u.difficulty_mode
   INTO v_hibernated_since, v_current_power, v_free_wakeup_count, v_difficulty_mode
   FROM public.ai_partners a
   JOIN public.users u ON u.id = a.user_id
@@ -525,7 +525,7 @@ BEGIN
   SET status = 'active',
       hibernated_since = NULL,
       violation_count = 0,
-      current_survival_power = current_survival_power + v_power_returned,
+      current_contribution = current_contribution + v_power_returned,
       updated_at = NOW()
   WHERE user_id = p_user_id;
   
@@ -607,7 +607,7 @@ BEGIN
   END;
   
   -- 获取本周新增点数
-  SELECT weekly_new_power INTO v_weekly_power
+  SELECT weekly_contribution INTO v_weekly_power
   FROM public.ai_partners WHERE user_id = p_user_id;
   
   -- 本周对话次数

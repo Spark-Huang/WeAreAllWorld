@@ -21,8 +21,8 @@ export interface EvaluationResult {
   userId: string;
   weekStart: string;
   weekEnd: string;
-  achievedPower: number;
-  requiredPower: number;
+  achievedContribution: number;
+  requiredContribution: number;
   passed: boolean;
   actionTaken: 'none' | 'warned' | 'hibernated' | 'woken_up' | 'decayed' | 'recycled';
   violationCount: number;
@@ -54,10 +54,10 @@ export interface WakeupResult {
 
 export interface WeeklyStats {
   weekStart: string;
-  weeklyPower: number;
+  weeklyContribution: number;
   dialogueCount: number;
   signinCount: number;
-  requiredPower: number;
+  requiredContribution: number;
   progressPercent: number;
   activityLevel: 'below_target' | 'basic' | 'active' | 'deep';
 }
@@ -96,8 +96,8 @@ export class CentralEvaluationService {
         userId,
         weekStart: result.week_start,
         weekEnd: result.week_end,
-        achievedPower: result.achieved_power,
-        requiredPower: result.required_power,
+        achievedContribution: result.achieved_power,
+        requiredContribution: result.required_power,
         passed: result.passed,
         actionTaken: result.action_taken,
         violationCount: result.violation_count,

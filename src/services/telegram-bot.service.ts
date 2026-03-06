@@ -164,7 +164,7 @@ export class TelegramBotService {
         await ctx.reply(
           `💤 我正在休眠中...\n\n` +
           `已经休眠 ${hibernatedDays} 天\n` +
-          `当前贡献值：${aiPartner.currentSurvivalPower} 点\n` +
+          `当前贡献值：${aiPartner.currentContribution} 点\n` +
           `⚠️ 贡献值每天 -2，归零后将被回收\n\n` +
           `使用 /wakeup 唤醒我吧！`,
           Markup.inlineKeyboard([
@@ -175,8 +175,8 @@ export class TelegramBotService {
         // 活跃用户
         await ctx.reply(
           `👋 欢迎回来！\n\n` +
-          `累计贡献值：${aiPartner.totalSurvivalPower} 点\n` +
-          `当前贡献值：${aiPartner.currentSurvivalPower} 点\n` +
+          `累计贡献值：${aiPartner.totalContribution} 点\n` +
+          `当前贡献值：${aiPartner.currentContribution} 点\n` +
           `成长阶段：${aiPartner.growthStage}\n` +
           `称号：${aiPartner.currentTitle}\n\n` +
           `有什么想和我聊的吗？`
@@ -204,11 +204,11 @@ export class TelegramBotService {
       
       const { aiPartner, user } = userWithAI;
       const weeklyStats = await this.centralEvaluation.getWeeklyStats(user.id);
-      const nextMilestone = getNextMilestone(aiPartner.totalSurvivalPower);
+      const nextMilestone = getNextMilestone(aiPartner.totalContribution);
       
       let message = `📊 贡献值详情\n\n`;
-      message += `累计贡献值：${aiPartner.totalSurvivalPower} 点\n`;
-      message += `当前贡献值：${aiPartner.currentSurvivalPower} 点\n`;
+      message += `累计贡献值：${aiPartner.totalContribution} 点\n`;
+      message += `当前贡献值：${aiPartner.currentContribution} 点\n`;
       message += `成长阶段：${aiPartner.growthStage}\n`;
       message += `称号：${aiPartner.currentTitle}\n\n`;
       
@@ -220,7 +220,7 @@ export class TelegramBotService {
       if (nextMilestone) {
         message += `🎯 下一个里程碑\n`;
         message += `${nextMilestone.title}（${nextMilestone.threshold}点）\n`;
-        message += `还需 ${nextMilestone.threshold - aiPartner.totalSurvivalPower} 点`;
+        message += `还需 ${nextMilestone.threshold - aiPartner.totalContribution} 点`;
       }
       
       await ctx.reply(message);
@@ -305,8 +305,8 @@ export class TelegramBotService {
       
       let message = `🤖 AI伙伴状态\n\n`;
       message += `状态：${this.getStatusEmoji(aiPartner.status)} ${this.getStatusText(aiPartner.status)}\n`;
-      message += `累计贡献值：${aiPartner.totalSurvivalPower} 点\n`;
-      message += `当前贡献值：${aiPartner.currentSurvivalPower} 点\n`;
+      message += `累计贡献值：${aiPartner.totalContribution} 点\n`;
+      message += `当前贡献值：${aiPartner.currentContribution} 点\n`;
       message += `成长阶段：${aiPartner.growthStage}\n`;
       message += `称号：${aiPartner.currentTitle}\n`;
       
