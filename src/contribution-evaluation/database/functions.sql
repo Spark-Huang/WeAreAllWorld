@@ -1,6 +1,6 @@
 -- ============================================
--- 共生世界（WeAreAll.World）数据库函数 v2.1
--- 日期: 2026-03-06
+-- 共生世界（WeAreAll.World）数据库函数 v2.2
+-- 日期: 2026-03-07
 -- ============================================
 
 -- ============================================
@@ -25,7 +25,24 @@ DECLARE
   v_milestones JSONB := '[]';
   v_new_abilities JSONB;
   v_old_abilities JSONB;
+  v_user_exists BOOLEAN;
 BEGIN
+  -- 【输入验证】检查 user_id 是否有效
+  IF p_user_id IS NULL THEN
+    RETURN jsonb_build_object('error', 'user_id cannot be null', 'code', 'INVALID_INPUT');
+  END IF;
+  
+  -- 【输入验证】检查用户是否存在
+  SELECT EXISTS(SELECT 1 FROM public.users WHERE id = p_user_id) INTO v_user_exists;
+  IF NOT v_user_exists THEN
+    RETURN jsonb_build_object('error', 'User not found', 'code', 'USER_NOT_FOUND');
+  END IF;
+  
+  -- 【输入验证】检查积分是否有效
+  IF p_points IS NULL OR p_points < 0 THEN
+    RETURN jsonb_build_object('error', 'Invalid points value', 'code', 'INVALID_POINTS');
+  END IF;
+  
   -- 【修复竞态条件】使用 FOR UPDATE 行级锁，防止并发更新丢失
   SELECT total_contribution, weekly_contribution, abilities 
   INTO v_current_total, v_current_weekly, v_old_abilities
@@ -33,7 +50,7 @@ BEGIN
   FOR UPDATE;  -- 关键修复：行级锁
   
   IF v_current_total IS NULL THEN
-    RETURN jsonb_build_object('error', 'AI partner not found');
+    RETURN jsonb_build_object('error', 'AI partner not found', 'code', 'PARTNER_NOT_FOUND');
   END IF;
   
   -- 计算新点数
