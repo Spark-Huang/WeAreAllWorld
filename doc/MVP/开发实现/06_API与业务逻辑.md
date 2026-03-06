@@ -1,765 +1,201 @@
 # 共生世界（WeAreAll.World） MVP开发实现文档 - API与业务逻辑
 
 **文档类型**：MVP开发实现文档（分册六）
-**版本**：v16.0（基于最新需求文档与sub_project须知优化版）
-**日期**：2026年2月26日
+**版本**：v18.0（基于最新共生规则系统开发架构文档重构）
+**日期**：2026年3月6日
 
 ---
 
 ## 目录
 
-1. [核心原则](#1-核心原则)
-2. [API调用方式](#2-api调用方式)
-3. [业务逻辑封装](#3-业务逻辑封装)
-4. [定时任务](#4-定时任务)
+1. [核心架构原则](#1-核心架构原则)
+2. [后台异步处理队列 (BullMQ)](#2-后台异步处理队列-bullmq)
+3. [定时任务 (Cron Jobs)](#3-定时任务-cron-jobs)
+4. [核心RPC业务封装](#4-核心rpc业务封装)
 
 ---
 
-## 1. 核心原则
+## 1. 核心架构原则
 
-### 1.1 为什么简化API设计？
-
-**错误的设计（已废弃）**：
-- ❌ 复杂的内部API（UserServiceAPI、ChatServiceAPI等）
-- ❌ OpenClaw Gateway API封装层
-- ❌ 多个重复的服务类（MemoryPointsService、MilestoneService等）
-- ❌ 复杂的实用能力服务
-- ❌ 5个定时任务
-
-**正确的设计（符合优化原则）**：
-- ✅ **直接调用Supabase** - 使用RPC和查询，无需封装
-- ✅ **直接调用OpenClaw** - 无需Gateway API
-- ✅ **数据库函数处理业务逻辑** - 减少后端代码
-- ✅ **只保留2个核心定时任务** - 每周评估、休眠衰减
-- ✅ **OpenClaw Skills处理AI逻辑** - 无需重复服务
-
-### 1.2 API调用架构
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                  管理沙箱（主项目）                          │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  Bot Service / API Endpoints                        │   │
-│  │                                                     │   │
-│  │  • 直接调用 Supabase RPC                           │   │
-│  │    - update_memory_points()                        │   │
-│  │    - process_daily_checkin()                       │   │
-│  │    - run_weekly_evaluation()                       │   │
-│  │                                                     │   │
-│  │  • 直接查询 Supabase                               │   │
-│  │    - SELECT * FROM users                           │   │
-│  │    - SELECT * FROM ai_partners                     │   │
-│  │    - SELECT * FROM story_progress                  │   │
-│  │                                                     │   │
-│  │  • 直接调用 OpenClaw API                           │   │
-│  │    - POST user-svc-{USER_ID}:18789/api/chat        │   │
-│  │    - POST /api/skills/story-progress/get_scene     │   │
-│  │    - POST /api/skills/memory-point-calc            │   │
-│  └──────────────────┬──────────────────────────────────┘   │
-│                     │                                      │
-│                     ▼ API调用                              │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  Supabase + OpenClaw                               │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**关键优势**：
-- ✅ 无需维护复杂的API封装层
-- ✅ 数据库函数保证数据一致性
-- ✅ 代码量减少60%
-- ✅ 架构简单，易于维护
+为保证 Telegram Bot 的极速响应，并将高耗时的 LLM 评估与核心库更新脱离主请求链路，本系统的业务逻辑高度依赖**异步消息队列 (BullMQ)** 和 **数据库内建函数 (Supabase RPC)**。
 
 ---
 
-## 2. API调用方式
+## 2. 后台异步处理队列 (BullMQ)
 
-### 2.1 Supabase RPC调用（核心函数）
+### 2.1 队列配置
+在管理沙箱 (Control Plane) 的 Node.js 环境中引入 Redis 和 BullMQ。
+创建队列 `scoringQueue`。
 
-#### 更新生存算力
-
-```typescript
-// 直接调用数据库函数
-const { data, error } = await supabase
-  .rpc('update_memory_points', {
-    p_user_id: 'user-123',
-    p_points: 5,              // 变更点数（+/-）
-    p_source_type: 'dialogue', // 来源类型
-    p_source_detail: 'emotion_expression'
-  });
-
-// 返回值
-{
-  previous_points: 80,
-  new_points: 85,
-  points_added: 5,
-  milestones_reached: [
-    { name: "exclusive_memory", threshold: 25 }
-  ]
-}
-```
-
-#### 每日签到
+### 2.2 Worker 处理逻辑
 
 ```typescript
-const { data, error } = await supabase
-  .rpc('process_daily_checkin', {
-    p_user_id: 'user-123'
-  });
+import { Worker, Job } from 'bullmq';
 
-// 返回值
-{
-  success: true,
-  streak_count: 5,
-  base_reward: 30,
-  streak_bonus: 20,
-  total_reward: 50
-}
-```
-
-#### 每周评估
-
-```typescript
-const { data, error } = await supabase
-  .rpc('run_weekly_evaluation', {
-    p_user_id: 'user-123'
-  });
-
-// 返回值
-{
-  week_start: '2026-02-24',
-  points_grown: 45,
-  result: 'pass',
-  reward_tier: 'active',
-  threshold: 15
-}
-```
-
-### 2.2 Supabase 查询示例
-
-#### 查询用户完整信息
-
-```typescript
-const { data, error } = await supabase
-  .from('users')
-  .select(`
-    *,
-    ai_partners!inner(*),
-    story_progress!inner(*)
-  `)
-  .eq('telegram_user_id', telegramUserId)
-  .single();
-
-// 返回用户 + AI伙伴 + 剧情进度
-```
-
-#### 查询生存算力日志
-
-```typescript
-const { data, error } = await supabase
-  .from('memory_points_log')
-  .select('*')
-  .eq('user_id', 'user-123')
-  .order('created_at', { ascending: false })
-  .limit(10);
-```
-
-#### 查询排行榜（前10名）
-
-```typescript
-const { data, error } = await supabase
-  .from('ai_partners')
-  .select('memory_points, users(telegram_username)')
-  .order('memory_points', { ascending: false })
-  .limit(10);
-```
-
-### 2.3 OpenClaw API调用
-
-#### 发送对话消息
-
-```typescript
-const response = await fetch(
-  `http://user-svc-${userId}:18789/api/chat`,
-  {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-User-Context': JSON.stringify({
-        userId: userId,
-        memoryPoints: 85,
-        personalityType: 'warm'
-      })
-    },
-    body: JSON.stringify({
-      message: '用户消息'
-    })
+const scoringWorker = new Worker('scoringQueue', async (job: Job) => {
+  const { userId, message } = job.data;
+  
+  // 1. 防刷检查 (从 Redis 获取近期频率)
+  const freq = await checkFrequencyLimit(userId);
+  if (freq > MAX_FAST_MSG_PER_MIN) {
+     // 被判定为灌水，直接给1分，跳过LLM
+     await supabase.rpc('add_survival_power', { p_user_id: userId, p_power: 1 });
+     return { skip_llm: true, reason: 'rate_limited' };
   }
-);
 
-const result = await response.json();
-// {
-//   response: 'AI回复内容',
-//   quality_type: 'emotion_expression',
-//   memory_points: 3,
-//   emotion_detected: 'happy'
-// }
-```
-
-#### 调用story-progress Skill
-
-```typescript
-const response = await fetch(
-  `http://user-svc-${userId}:18789/api/skills/story-progress/get_scene`,
-  {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chapter: 1,
-      scene_id: 'start',
-      user_context: { userId: userId }
-    })
-  }
-);
-
-const result = await response.json();
-// {
-//   content: '场景内容...',
-//   choices: [{id: 'A', text: '选择A'}, {id: 'B', text: '选择B'}]
-// }
-```
-
-#### 调用memory-point-calc Skill
-
-```typescript
-const response = await fetch(
-  `http://user-svc-${userId}:18789/api/skills/memory-point-calc/calculate_quality`,
-  {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      message: '用户消息',
-      response: 'AI回复'
-    })
-  }
-);
-
-const result = await response.json();
-// {
-//   quality_type: 'share_experience',
-//   points: 4,
-//   reason: '分享了今天的经历'
-// }
+  // 2. 调用专属评估 LLM 进行定级与提纯
+  const prompt = generateEvaluationPrompt(message);
+  const evaluationJSON = await callEvaluationLLM(prompt);
+  /* 
+   * evaluationJSON 期望格式:
+   * { "category": "deep_thought", "score": 5, "rarity": "...", "extracted_memory": "..." }
+   */
+   
+  // 3. 记录日志（数据资产化）
+  await supabase.from('interaction_logs').insert({
+    user_id: userId,
+    message_hash: hashMessage(message), // 仅存 Hash 和 提纯的提取记忆，保护原文明文隐私
+    category: evaluationJSON.category,
+    granted_power: evaluationJSON.score,
+    data_rarity: evaluationJSON.rarity,
+    ai_understanding: evaluationJSON
+  });
+  
+  // 4. 执行算力发放RPC (处理累加及里程碑触发)
+  await supabase.rpc('add_survival_power', { 
+    p_user_id: userId, 
+    p_power: evaluationJSON.score 
+  });
+  
+  return { success: true };
+}, { connection: redisConnection });
 ```
 
 ---
 
-## 3. 业务逻辑封装
+## 3. 定时任务 (Cron Jobs)
 
-### 3.1 核心函数封装
+使用 `node-cron` 或 K8s 内部 CronJob 驱动，定期拉起清洗脚本操作 Supabase 数据库。这是系统产生“压迫感”的核心。
 
-```typescript
-// utils/supabase-client.ts
-import { createClient } from '@supabase/supabase-js';
+### 3.1 周常核算与休眠 (Weekly Evaluation)
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY!;
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
-```
+**频次**：每小时执行一次。扫描 `registration_date` 对齐到今日此时的用户（确保每个用户满整整 7 天才被核算）。
 
 ```typescript
-// services/user-service.ts
-import { supabase } from '../utils/supabase-client';
-
-// 获取用户完整信息
-export async function getUserByTelegramId(telegramUserId: number) {
-  const { data, error } = await supabase
-    .from('users')
-    .select(`
-      *,
-      ai_partners!inner(*),
-      story_progress!inner(*)
-    `)
-    .eq('telegram_user_id', telegramUserId)
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-// 注册用户
-export async function registerUser(telegramUserId: number, telegramUsername?: string) {
-  const { data, error } = await supabase
-    .from('users')
-    .insert({
-      telegram_user_id: telegramUserId,
-      telegram_username: telegramUsername
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-// 更新用户最后登录时间
-export async function updateLastLogin(userId: string) {
-  const { error } = await supabase
-    .from('users')
-    .update({
-      last_login_at: new Date().toISOString()
-    })
-    .eq('id', userId);
-
-  if (error) throw error;
-}
-```
-
-```typescript
-// services/ai-partner-service.ts
-import { supabase } from '../utils/supabase-client';
-
-// 获取AI伙伴信息
-export async function getAIPartner(userId: string) {
-  const { data, error } = await supabase
-    .from('ai_partners')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-// 更新AI伙伴状态
-export async function updateAIStatus(userId: string, status: string) {
-  const { error } = await supabase
-    .from('ai_partners')
-    .update({
-      status: status,
-      updated_at: new Date().toISOString()
-    })
-    .eq('user_id', userId);
-
-  if (error) throw error;
-}
-```
-
-```typescript
-// services/story-service.ts
-import { supabase } from '../utils/supabase-client';
-
-// 获取剧情进度
-export async function getStoryProgress(userId: string) {
-  const { data, error } = await supabase
-    .from('story_progress')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-// 更新剧情进度
-export async function updateStoryProgress(
-  userId: string,
-  chapter: number,
-  sceneId: string,
-  choice: string
-) {
-  // 先获取当前进度
-  const { data: currentProgress } = await supabase
-    .from('story_progress')
-    .select('choices_made')
-    .eq('user_id', userId)
-    .single();
-
-  const { data, error } = await supabase
-    .from('story_progress')
-    .update({
-      current_chapter: chapter,
-      current_scene: sceneId,
-      choices_made: [...(currentProgress?.choices_made || []), choice],
-      updated_at: new Date().toISOString()
-    })
-    .eq('user_id', userId)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-```
-
-### 3.2 OpenClaw调用封装
-
-```typescript
-// services/openclaw-service.ts
-
-// 发送消息到OpenClaw
-export async function sendMessageToOpenClaw(
-  userId: string,
-  message: string,
-  userContext: any
-) {
-  const response = await fetch(
-    `http://user-svc-${userId}:18789/api/chat`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-User-Context': JSON.stringify(userContext)
-      },
-      body: JSON.stringify({ message })
+// 伪代码逻辑
+async function runWeeklyEvaluation() {
+  // 1. 查出满7天周期的用户
+  const usersToEvaluate = await fetchUsersReachingWeeklyCycle();
+  
+  for(const user of usersToEvaluate) {
+    const ai = user.ai_partners;
+    const passed = ai.weekly_new_power >= 15;
+    
+    let action = 'none';
+    let newViolation = ai.violation_count;
+    
+    if (!passed) {
+      newViolation += 1;
+      if (newViolation >= 2) {
+        action = 'hibernated';
+        // 触发休眠
+        await supabase.from('ai_partners').update({
+          status: 'hibernated',
+          dormant_since: new Date().toISOString(),
+          weekly_new_power: 0,
+          violation_count: newViolation
+        }).eq('user_id', user.id);
+      } else {
+        action = 'warned';
+        // 记一次违规但清零周积分，重新算
+        await supabase.from('ai_partners').update({
+          weekly_new_power: 0,
+          violation_count: newViolation
+        }).eq('user_id', user.id);
+      }
+    } else {
+      // 通过，重置数据迎接新一周
+      await supabase.from('ai_partners').update({
+        weekly_new_power: 0,
+        violation_count: 0
+      }).eq('user_id', user.id);
     }
-  );
-
-  if (!response.ok) {
-    throw new Error(`OpenClaw API error: ${response.status}`);
-  }
-
-  return response.json();
-}
-
-// 获取剧情场景
-export async function getStoryScene(
-  userId: string,
-  chapter: number,
-  sceneId: string
-) {
-  const response = await fetch(
-    `http://user-svc-${userId}:18789/api/skills/story-progress/get_scene`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chapter,
-        scene_id: sceneId,
-        user_context: { userId }
-      })
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`OpenClaw API error: ${response.status}`);
-  }
-
-  return response.json();
-}
-```
-
-### 3.3 生存算力更新流程
-
-```typescript
-// 完整流程示例
-export async function handleUserMessage(
-  telegramUserId: number,
-  message: string
-) {
-  // 1. 获取用户信息
-  const user = await getUserByTelegramId(telegramUserId);
-  const aiPartner = user.ai_partners[0];
-
-  // 2. 调用OpenClaw处理消息
-  const openClawResponse = await sendMessageToOpenClaw(
-    user.id,
-    message,
-    {
-      userId: user.id,
-      memoryPoints: aiPartner.memory_points,
-      personalityType: aiPartner.personality
-    }
-  );
-
-  // 3. 更新生存算力（如果有）
-  if (openClawResponse.memory_points > 0) {
-    await supabase.rpc('update_memory_points', {
-      p_user_id: user.id,
-      p_change: openClawResponse.memory_points,
-      p_source_type: 'dialogue',
-      p_source_detail: openClawResponse.quality_type
+    
+    // 写入审计表
+    await supabase.from('central_evaluations').insert({
+       user_id: user.id,
+       required_power: 15,
+       achieved_power: ai.weekly_new_power,
+       passed: passed,
+       action_taken: action
     });
   }
-
-  // 4. 返回AI回复
-  return openClawResponse.response;
 }
 ```
 
----
+### 3.2 每日休眠衰减 (Daily Decay)
 
-## 4. 定时任务
-
-### 4.1 核心定时任务（仅2个）
-
-| 任务名称 | 执行频率 | 功能 | 优先级 |
-|---------|---------|------|--------|
-| `weekly_evaluation` | 每周一 00:00 | 执行每周评估 | P0 |
-| `dormant_decay` | 每日 00:00 | 休眠AI生存算力衰减 | P0 |
-
-**移除的任务**：
-- ❌ daily_greeting（非核心）
-- ❌ cleanup_expired（MVP数据量小）
-- ❌ sync_stats（实时查询即可）
-
-### 4.2 每周评估任务
+**频次**：每日凌晨 00:00 全局扫描。
 
 ```typescript
-// tasks/weekly-evaluation.ts
-import { supabase } from '../utils/supabase-client';
-import { createClient } from '@supabase/supabase-js';
-
-const adminSupabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
-
-// 每周一执行评估
-export async function runWeeklyEvaluation() {
-  console.log('开始每周评估...');
-
-  // 获取所有非休眠用户
-  const { data: users, error } = await adminSupabase
-    .from('users')
-    .select('id');
-
-  if (error) {
-    console.error('获取用户失败:', error);
-    return;
+async function runDailyDecay() {
+  // 对所有 status = 'hibernated' 且 current_survival_power > 0 的记录扣2分
+  
+  // 1. 批量调用 RPC 或者直接批量 Update
+  const { data: affectedAi } = await supabase.from('ai_partners')
+     .select('user_id, current_survival_power')
+     .eq('status', 'hibernated')
+     .gt('current_survival_power', 0);
+     
+  for (const ai of affectedAi) {
+     // RPC内部含 GREATEST(0, current_survival_power - 2)
+     await supabase.rpc('add_survival_power', { p_user_id: ai.user_id, p_power: -2 });
+     
+     // 记录衰减日志
+     await supabase.from('interaction_logs').insert({
+       user_id: ai.user_id,
+       granted_power: -2,
+       source_type: 'decay',
+       ai_understanding: { reason: "休眠期每日惩罚" }
+     });
   }
-
-  // 为每个用户执行评估
-  for (const user of users) {
-    try {
-      const { data: result } = await adminSupabase
-        .rpc('run_weekly_evaluation', {
-          p_user_id: user.id
-        });
-
-      if (result && result.result === 'warning') {
-        console.log(`用户 ${user.id} 评估警告`);
-      }
-    } catch (err) {
-      console.error(`评估用户 ${user.id} 失败:`, err);
-    }
-  }
-
-  console.log('每周评估完成');
 }
-
-// 使用node-cron调度
-import cron from 'node-cron';
-
-cron.schedule('0 0 * * 1', () => {  // 每周一00:00
-  console.log('执行每周评估任务');
-  runWeeklyEvaluation();
-});
-```
-
-### 4.3 休眠衰减任务
-
-```typescript
-// tasks/dormant-decay.ts
-import { supabase } from '../utils/supabase-client';
-import { createClient } from '@supabase/supabase-js';
-
-const adminSupabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
-
-// 每日执行休眠衰减
-export async function runDormantDecay() {
-  console.log('开始休眠衰减...');
-
-  // 获取所有休眠中的AI
-  const { data: aiPartners, error } = await adminSupabase
-    .from('ai_partners')
-    .select('user_id, dormant_since')
-    .eq('status', 'dormant');
-
-  if (error) {
-    console.error('获取休眠AI失败:', error);
-    return;
-  }
-
-  // 为每个休眠AI执行衰减
-  for (const ai of aiPartners) {
-    try {
-      // 获取当前生存算力
-      const { data: aiPartner } = await adminSupabase
-        .from('ai_partners')
-        .select('memory_points')
-        .eq('user_id', ai.user_id)
-        .single();
-
-      if (aiPartner && aiPartner.memory_points > 0) {
-        // 减少2点
-        const newPoints = Math.max(0, aiPartner.memory_points - 2);
-
-        await adminSupabase
-          .from('ai_partners')
-          .update({ memory_points: newPoints })
-          .eq('user_id', ai.user_id);
-
-        // 记录日志
-        await adminSupabase
-          .from('memory_points_log')
-          .insert({
-            user_id: ai.user_id,
-            change: -2,
-            source_type: 'dormant_decay',
-            source_detail: `休眠衰减，剩余${newPoints}点`
-          });
-
-        // 如果归零，保持休眠状态
-        if (newPoints === 0) {
-          console.log(`用户 ${ai.user_id} 的AI生存算力已归零，保持休眠状态`);
-        }
-      }
-    } catch (err) {
-      console.error(`处理用户 ${ai.user_id} 衰减失败:`, err);
-    }
-  }
-
-  console.log('休眠衰减完成');
-}
-
-// 使用node-cron调度
-import cron from 'node-cron';
-
-cron.schedule('0 0 * * *', () => {  // 每日00:00
-  console.log('执行休眠衰减任务');
-  runDormantDecay();
-});
-```
-
-### 4.4 任务部署
-
-**使用Docker部署**：
-
-```dockerfile
-# Dockerfile
-FROM node:18-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm install --production
-
-COPY . .
-
-CMD ["node", "tasks/scheduler.js"]
-```
-
-```javascript
-// tasks/scheduler.ts
-import cron from 'node-cron';
-import { runWeeklyEvaluation } from './weekly-evaluation';
-import { runDormantDecay } from './dormant-decay';
-
-console.log('定时任务调度器启动');
-
-// 每周一00:00执行评估
-cron.schedule('0 0 * * 1', () => {
-  console.log('[' + new Date().toISOString() + '] 执行每周评估');
-  runWeeklyEvaluation();
-});
-
-// 每日00:00执行衰减
-cron.schedule('0 0 * * *', () => {
-  console.log('[' + new Date().toISOString() + '] 执行休眠衰减');
-  runDormantDecay();
-});
-```
-
-**Kubernetes部署**：
-
-```yaml
-# k8s/cronjob-weekly-evaluation.yaml
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: weekly-evaluation
-spec:
-  schedule: "0 0 * * 1"  # 每周一00:00
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-          - name: evaluation
-            image: your-registry/game-tasks:latest
-            command: ["node", "tasks/weekly-evaluation.js"]
-            env:
-            - name: SUPABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: supabase-config
-                  key: url
-            - name: SUPABASE_SERVICE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: supabase-config
-                  key: service-key
-          restartPolicy: OnFailure
-```
-
-```yaml
-# k8s/cronjob-dormant-decay.yaml
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: dormant-decay
-spec:
-  schedule: "0 0 * * *"  # 每日00:00
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-          - name: decay
-            image: your-registry/game-tasks:latest
-            command: ["node", "tasks/dormant-decay.js"]
-            env:
-            - name: SUPABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: supabase-config
-                  key: url
-            - name: SUPABASE_SERVICE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: supabase-config
-                  key: service-key
-          restartPolicy: OnFailure
 ```
 
 ---
 
-## 相关文档
+## 4. 核心RPC业务封装
 
-- [01_项目架构概述.md](./01_项目架构概述.md) - 系统架构、核心组件、数据流
-- [02_数据库设计.md](./02_数据库设计.md) - 简化后的数据库表结构
-- [03_OpenClaw集成设计.md](./03_OpenClaw集成设计.md) - OpenClaw技能设计、数据同步
-- [04_LLM集成设计.md](./04_LLM集成设计.md) - Prompt模板、质量判定服务
-- [05_Telegram_Bot实现.md](./05_Telegram_Bot实现.md) - Bot命令、消息处理
-- [09_sub_project须知.md](../09_sub_project须知.md) - 云版OpenClaw开发指南
+所有的状态变化都必须收口在单一的原子层以防并发脏写。这在 `02_数据库设计.md` 中的 `add_survival_power` 已经完整体现。
 
----
+### 4.1 唤醒补偿 RPC (`wakeup_ai_partner`)
 
-*文档生成时间：2026年2月26日*
-*版本：v16.0（基于最新需求文档与sub_project须知优化版）*
-*更新说明：*
-*1. 废弃复杂的内部API设计（UserServiceAPI、ChatServiceAPI等）*
-*2. 直接调用Supabase RPC和查询，无需封装层*
-*3. 直接调用OpenClaw API，无需Gateway API*
-*4. 移除多个重复的服务类（MemoryPointsService、MilestoneService等）*
-*5. 只保留2个核心定时任务（每周评估、休眠衰减）*
-*6. 业务逻辑主要由数据库函数和OpenClaw Skills处理*
-*7. 代码量减少约60%*
-*8. 符合"简化设计"和"复用OpenClaw能力"原则*
-*9. 更新版本号至v16.0以保持与其他文档一致*
+```sql
+CREATE OR REPLACE FUNCTION public.wakeup_ai_partner(
+  p_user_id UUID
+) RETURNS JSONB LANGUAGE plpgsql AS $$
+DECLARE
+  v_ai RECORD;
+  v_days_dormant INTEGER;
+  v_penalty INTEGER;
+  v_refund INTEGER;
+BEGIN
+  SELECT * INTO v_ai FROM public.ai_partners WHERE user_id = p_user_id AND status = 'hibernated' FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success', false); END IF;
+  
+  -- 粗略计算休眠天数
+  v_days_dormant := EXTRACT(DAY FROM NOW() - v_ai.dormant_since);
+  v_penalty := v_days_dormant * 2;
+  -- 返还损失的一半
+  v_refund := v_penalty / 2;
+  
+  UPDATE public.ai_partners 
+  SET status = 'active',
+      dormant_since = NULL,
+      violation_count = 0,
+      current_survival_power = current_survival_power + v_refund
+  WHERE user_id = p_user_id;
+  
+  RETURN jsonb_build_object('success', true, 'refunded', v_refund);
+END;
+$$;
