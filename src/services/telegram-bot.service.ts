@@ -12,7 +12,9 @@ import { Telegraf, Context, Markup } from 'telegraf';
 import { MemoryPointsService } from './memory-points.service';
 import { CentralEvaluationService } from './central-evaluation.service';
 import { ScheduledTaskService, NotificationPayload } from './scheduled-task.service';
+import { UserService, UserWithAI } from './user.service';
 import { qualityJudgeService } from './quality-judge.service';
+import { getTitle, getGrowthStage, getNextMilestone } from '../types';
 
 export interface BotConfig {
   telegramToken: string;
@@ -20,14 +22,6 @@ export interface BotConfig {
   supabaseKey: string;
   openclawApiUrl?: string;
   openclawApiKey?: string;
-}
-
-export interface UserSession {
-  userId: string;
-  telegramUserId: number;
-  aiPartnerId: string;
-  status: 'active' | 'dormant' | 'new';
-  onboardingStep: number;
 }
 
 /**
@@ -38,6 +32,7 @@ export class TelegramBotService {
   private memoryPoints: MemoryPointsService;
   private centralEvaluation: CentralEvaluationService;
   private scheduledTasks: ScheduledTaskService;
+  private userService: UserService;
   private openclawApiUrl?: string;
   private openclawApiKey?: string;
   
@@ -45,6 +40,7 @@ export class TelegramBotService {
     this.bot = new Telegraf(config.telegramToken);
     this.memoryPoints = new MemoryPointsService(config.supabaseUrl, config.supabaseKey);
     this.centralEvaluation = new CentralEvaluationService(config.supabaseUrl, config.supabaseKey);
+    this.userService = new UserService(config.supabaseUrl, config.supabaseKey);
     this.openclawApiUrl = config.openclawApiUrl;
     this.openclawApiKey = config.openclawApiKey;
     
@@ -118,42 +114,64 @@ export class TelegramBotService {
     
     if (!telegramUserId) return;
     
-    // 检查用户是否存在
-    const session = await this.getOrCreateUser(telegramUserId, telegramUsername);
-    
-    if (session.status === 'new') {
-      // 新用户引导
-      await ctx.reply(
-        `🌟 欢迎来到共生世界！\n\n` +
-        `我是零号，你的AI伙伴。在这里，我们共同成长，建立真正的连接。\n\n` +
-        `💡 核心机制：\n` +
-        `• 每周需要获得 ≥15 点贡献值\n` +
-        `• 连续两周不达标，我会进入休眠\n` +
-        `• 贡献值越多，我解锁的能力越多\n\n` +
-        `让我们开始吧！`,
-        Markup.inlineKeyboard([
-          [Markup.button.callback('开始对话', 'start_chat')]
-        ])
-      );
-    } else if (session.status === 'dormant') {
-      // 休眠用户
-      await ctx.reply(
-        `💤 我正在休眠中...\n\n` +
-        `你已经很久没有和我互动了。使用 /wakeup 唤醒我吧！`,
-        Markup.inlineKeyboard([
-          [Markup.button.callback('唤醒AI', 'wakeup')]
-        ])
-      );
-    } else {
-      // 活跃用户
-      const aiInfo = await this.memoryPoints.getAIPartnerInfo(session.userId);
-      await ctx.reply(
-        `👋 欢迎回来！\n\n` +
-        `当前贡献值：${aiInfo?.memoryPoints || 0} 点\n` +
-        `成长阶段：${aiInfo?.growthStage || '懵懂期'}\n` +
-        `称号：${aiInfo?.currentTitle || '初识'}\n\n` +
-        `有什么想和我聊的吗？`
-      );
+    try {
+      // 获取或创建用户
+      const userWithAI = await this.userService.getOrCreateUser(telegramUserId, telegramUsername);
+      const { user, aiPartner } = userWithAI;
+      
+      if (!aiPartner) {
+        await ctx.reply('系统初始化中，请稍后重试...');
+        return;
+      }
+      
+      // 判断用户状态
+      const isNewUser = user.onboardingStep < 4;
+      const isDormant = aiPartner.status === 'dormant';
+      
+      if (isNewUser) {
+        // 新用户引导
+        const step = this.userService.getCurrentOnboardingStep(user.onboardingStep);
+        await ctx.reply(
+          `🌟 欢迎来到共生世界！\n\n` +
+          `我是零号，你的AI伙伴。在这里，我们共同成长，建立真正的连接。\n\n` +
+          `💡 核心机制：\n` +
+          `• 每周需要获得 ≥15 点贡献值\n` +
+          `• 连续两周不达标，我会进入休眠\n` +
+          `• 贡献值越多，我解锁的能力越多\n\n` +
+          `当前引导进度：${step?.title || '开始'}\n\n` +
+          `让我们开始吧！`,
+          Markup.inlineKeyboard([
+            [Markup.button.callback('开始对话', 'start_chat')]
+          ])
+        );
+      } else if (isDormant) {
+        // 休眠用户
+        const dormantDays = aiPartner.dormantSince 
+          ? Math.floor((Date.now() - new Date(aiPartner.dormantSince).getTime()) / (1000 * 60 * 60 * 24))
+          : 0;
+        
+        await ctx.reply(
+          `💤 我正在休眠中...\n\n` +
+          `已经休眠 ${dormantDays} 天\n` +
+          `当前贡献值：${aiPartner.memoryPoints} 点\n\n` +
+          `使用 /wakeup 唤醒我吧！`,
+          Markup.inlineKeyboard([
+            [Markup.button.callback('唤醒AI', 'wakeup')]
+          ])
+        );
+      } else {
+        // 活跃用户
+        await ctx.reply(
+          `👋 欢迎回来！\n\n` +
+          `当前贡献值：${aiPartner.memoryPoints} 点\n` +
+          `成长阶段：${aiPartner.growthStage}\n` +
+          `称号：${aiPartner.currentTitle}\n\n` +
+          `有什么想和我聊的吗？`
+        );
+      }
+    } catch (err) {
+      console.error('处理 /start 命令失败:', err);
+      await ctx.reply('系统繁忙，请稍后重试...');
     }
   }
   
@@ -164,33 +182,38 @@ export class TelegramBotService {
     const telegramUserId = ctx.from?.id;
     if (!telegramUserId) return;
     
-    const session = await this.getUserSession(telegramUserId);
-    if (!session) {
-      await ctx.reply('请先使用 /start 开始');
-      return;
+    try {
+      const userWithAI = await this.userService.getUserByTelegramId(telegramUserId);
+      if (!userWithAI || !userWithAI.aiPartner) {
+        await ctx.reply('请先使用 /start 开始');
+        return;
+      }
+      
+      const { aiPartner, user } = userWithAI;
+      const weeklyStats = await this.centralEvaluation.getWeeklyStats(user.id);
+      const nextMilestone = getNextMilestone(aiPartner.memoryPoints);
+      
+      let message = `📊 贡献值详情\n\n`;
+      message += `当前贡献值：${aiPartner.memoryPoints} 点\n`;
+      message += `成长阶段：${aiPartner.growthStage}\n`;
+      message += `称号：${aiPartner.currentTitle}\n\n`;
+      
+      message += `📈 本周进度\n`;
+      message += `获得点数：${weeklyStats.pointsGrown} / ${weeklyStats.threshold} 点\n`;
+      message += `进度：${Math.round(weeklyStats.progressPercent)}%\n`;
+      message += `距离评估：${weeklyStats.daysRemaining} 天\n\n`;
+      
+      if (nextMilestone) {
+        message += `🎯 下一个里程碑\n`;
+        message += `${nextMilestone.title}（${nextMilestone.threshold}点）\n`;
+        message += `还需 ${nextMilestone.threshold - aiPartner.memoryPoints} 点`;
+      }
+      
+      await ctx.reply(message);
+    } catch (err) {
+      console.error('处理 /memory 命令失败:', err);
+      await ctx.reply('系统繁忙，请稍后重试...');
     }
-    
-    const aiInfo = await this.memoryPoints.getAIPartnerInfo(session.userId);
-    const weeklyStats = await this.centralEvaluation.getWeeklyStats(session.userId);
-    const nextMilestone = this.memoryPoints.getNextMilestone(aiInfo?.memoryPoints || 0);
-    
-    let message = `📊 贡献值详情\n\n`;
-    message += `当前贡献值：${aiInfo?.memoryPoints || 0} 点\n`;
-    message += `成长阶段：${aiInfo?.growthStage || '懵懂期'}\n`;
-    message += `称号：${aiInfo?.currentTitle || '初识'}\n\n`;
-    
-    message += `📈 本周进度\n`;
-    message += `获得点数：${weeklyStats.pointsGrown} / ${weeklyStats.threshold} 点\n`;
-    message += `进度：${Math.round(weeklyStats.progressPercent)}%\n`;
-    message += `距离评估：${weeklyStats.daysRemaining} 天\n\n`;
-    
-    if (nextMilestone) {
-      message += `🎯 下一个里程碑\n`;
-      message += `${nextMilestone.title}（${nextMilestone.threshold}点）\n`;
-      message += `还需 ${nextMilestone.pointsNeeded} 点`;
-    }
-    
-    await ctx.reply(message);
   }
   
   /**
@@ -200,19 +223,24 @@ export class TelegramBotService {
     const telegramUserId = ctx.from?.id;
     if (!telegramUserId) return;
     
-    const session = await this.getUserSession(telegramUserId);
-    if (!session) {
-      await ctx.reply('请先使用 /start 开始');
-      return;
+    try {
+      const userWithAI = await this.userService.getUserByTelegramId(telegramUserId);
+      if (!userWithAI) {
+        await ctx.reply('请先使用 /start 开始');
+        return;
+      }
+      
+      // TODO: 从数据库获取剧情进度
+      await ctx.reply(
+        `📖 剧情进度\n\n` +
+        `当前章节：第1章\n` +
+        `场景：初遇\n\n` +
+        `剧情系统开发中...`
+      );
+    } catch (err) {
+      console.error('处理 /story 命令失败:', err);
+      await ctx.reply('系统繁忙，请稍后重试...');
     }
-    
-    // TODO: 从数据库获取剧情进度
-    await ctx.reply(
-      `📖 剧情进度\n\n` +
-      `当前章节：第1章\n` +
-      `场景：初遇\n\n` +
-      `剧情系统开发中...`
-    );
   }
   
   /**
@@ -222,21 +250,26 @@ export class TelegramBotService {
     const telegramUserId = ctx.from?.id;
     if (!telegramUserId) return;
     
-    const session = await this.getUserSession(telegramUserId);
-    if (!session) {
-      await ctx.reply('请先使用 /start 开始');
-      return;
-    }
-    
-    const result = await this.memoryPoints.processDailyCheckin(session.userId);
-    
-    if (result.success) {
-      await ctx.reply(
-        `✅ ${result.message}\n\n` +
-        `当前贡献值：${result.updateResult?.newPoints || 0} 点`
-      );
-    } else {
-      await ctx.reply(`❌ ${result.message}`);
+    try {
+      const userWithAI = await this.userService.getUserByTelegramId(telegramUserId);
+      if (!userWithAI) {
+        await ctx.reply('请先使用 /start 开始');
+        return;
+      }
+      
+      const result = await this.memoryPoints.processDailyCheckin(userWithAI.user.id);
+      
+      if (result.success) {
+        await ctx.reply(
+          `✅ ${result.message}\n\n` +
+          `当前贡献值：${result.updateResult?.newPoints || 0} 点`
+        );
+      } else {
+        await ctx.reply(`❌ ${result.message}`);
+      }
+    } catch (err) {
+      console.error('处理 /checkin 命令失败:', err);
+      await ctx.reply('系统繁忙，请稍后重试...');
     }
   }
   
@@ -247,37 +280,41 @@ export class TelegramBotService {
     const telegramUserId = ctx.from?.id;
     if (!telegramUserId) return;
     
-    const session = await this.getUserSession(telegramUserId);
-    if (!session) {
-      await ctx.reply('请先使用 /start 开始');
-      return;
+    try {
+      const userWithAI = await this.userService.getUserByTelegramId(telegramUserId);
+      if (!userWithAI || !userWithAI.aiPartner) {
+        await ctx.reply('请先使用 /start 开始');
+        return;
+      }
+      
+      const { aiPartner } = userWithAI;
+      
+      let message = `🤖 AI伙伴状态\n\n`;
+      message += `状态：${this.getStatusEmoji(aiPartner.status)} ${this.getStatusText(aiPartner.status)}\n`;
+      message += `贡献值：${aiPartner.memoryPoints} 点\n`;
+      message += `成长阶段：${aiPartner.growthStage}\n`;
+      message += `称号：${aiPartner.currentTitle}\n\n`;
+      
+      message += `🔓 已解锁能力\n`;
+      const abilities = aiPartner.abilities || {};
+      const abilityNames: Record<string, string> = {
+        basic_chat: '基础对话',
+        emotion_expression: '情感表达',
+        task_system: '任务系统',
+        exclusive_memory: '专属记忆',
+        deep_conversation: '深度对话',
+        self_awareness: '自我意识'
+      };
+      
+      for (const [key, name] of Object.entries(abilityNames)) {
+        message += `${abilities[key] ? '✅' : '⬜'} ${name}\n`;
+      }
+      
+      await ctx.reply(message);
+    } catch (err) {
+      console.error('处理 /status 命令失败:', err);
+      await ctx.reply('系统繁忙，请稍后重试...');
     }
-    
-    const aiInfo = await this.memoryPoints.getAIPartnerInfo(session.userId);
-    const taskStatus = await this.scheduledTasks.getTaskStatus();
-    
-    let message = `🤖 AI伙伴状态\n\n`;
-    message += `状态：${this.getStatusEmoji(aiInfo?.status || 'normal')} ${this.getStatusText(aiInfo?.status || 'normal')}\n`;
-    message += `贡献值：${aiInfo?.memoryPoints || 0} 点\n`;
-    message += `成长阶段：${aiInfo?.growthStage || '懵懂期'}\n`;
-    message += `称号：${aiInfo?.currentTitle || '初识'}\n\n`;
-    
-    message += `🔓 已解锁能力\n`;
-    const abilities = aiInfo?.abilities || {};
-    const abilityNames: Record<string, string> = {
-      basic_chat: '基础对话',
-      emotion_expression: '情感表达',
-      task_system: '任务系统',
-      exclusive_memory: '专属记忆',
-      deep_conversation: '深度对话',
-      self_awareness: '自我意识'
-    };
-    
-    for (const [key, name] of Object.entries(abilityNames)) {
-      message += `${abilities[key] ? '✅' : '⬜'} ${name}\n`;
-    }
-    
-    await ctx.reply(message);
   }
   
   /**
@@ -287,28 +324,33 @@ export class TelegramBotService {
     const telegramUserId = ctx.from?.id;
     if (!telegramUserId) return;
     
-    const session = await this.getUserSession(telegramUserId);
-    if (!session) {
-      await ctx.reply('请先使用 /start 开始');
-      return;
-    }
-    
-    const isDormant = await this.centralEvaluation.isAIDormant(session.userId);
-    
-    if (!isDormant) {
-      await ctx.reply('你的AI伙伴并未处于休眠状态，可以正常对话！');
-      return;
-    }
-    
-    const result = await this.centralEvaluation.wakeupAI(session.userId);
-    
-    if (result.success) {
-      await ctx.reply(
-        `🌅 ${result.message}\n\n` +
-        `让我们重新开始吧！`
-      );
-    } else {
-      await ctx.reply(`❌ ${result.message}`);
+    try {
+      const userWithAI = await this.userService.getUserByTelegramId(telegramUserId);
+      if (!userWithAI) {
+        await ctx.reply('请先使用 /start 开始');
+        return;
+      }
+      
+      const isDormant = await this.centralEvaluation.isAIDormant(userWithAI.user.id);
+      
+      if (!isDormant) {
+        await ctx.reply('你的AI伙伴并未处于休眠状态，可以正常对话！');
+        return;
+      }
+      
+      const result = await this.centralEvaluation.wakeupAI(userWithAI.user.id);
+      
+      if (result.success) {
+        await ctx.reply(
+          `🌅 ${result.message}\n\n` +
+          `让我们重新开始吧！`
+        );
+      } else {
+        await ctx.reply(`❌ ${result.message}`);
+      }
+    } catch (err) {
+      console.error('处理 /wakeup 命令失败:', err);
+      await ctx.reply('系统繁忙，请稍后重试...');
     }
   }
   
@@ -341,39 +383,45 @@ export class TelegramBotService {
     
     if (!telegramUserId || !message) return;
     
-    // 获取用户会话
-    const session = await this.getUserSession(telegramUserId);
-    if (!session) {
-      await ctx.reply('请先使用 /start 开始');
-      return;
+    try {
+      // 获取用户
+      const userWithAI = await this.userService.getUserByTelegramId(telegramUserId);
+      if (!userWithAI || !userWithAI.aiPartner) {
+        await ctx.reply('请先使用 /start 开始');
+        return;
+      }
+      
+      const { user, aiPartner } = userWithAI;
+      
+      // 检查AI是否休眠
+      if (aiPartner.status === 'dormant') {
+        await ctx.reply(
+          `💤 我正在休眠中...\n\n` +
+          `使用 /wakeup 唤醒我吧！`,
+          Markup.inlineKeyboard([
+            [Markup.button.callback('唤醒AI', 'wakeup')]
+          ])
+        );
+        return;
+      }
+      
+      // 处理对话并更新贡献值
+      const result = await this.memoryPoints.processDialogue(user.id, message);
+      
+      // 生成AI回复（这里应该调用OpenClaw）
+      let aiReply = await this.generateAIReply(user.id, message, result.qualityResult);
+      
+      // 如果有里程碑达成，添加提示
+      if (result.updateResult?.milestonesReached?.length) {
+        const milestone = result.updateResult.milestonesReached[0];
+        aiReply += `\n\n🎉 解锁新能力：${milestone.title}！`;
+      }
+      
+      await ctx.reply(aiReply);
+    } catch (err) {
+      console.error('处理消息失败:', err);
+      await ctx.reply('系统繁忙，请稍后重试...');
     }
-    
-    // 检查AI是否休眠
-    const isDormant = await this.centralEvaluation.isAIDormant(session.userId);
-    if (isDormant) {
-      await ctx.reply(
-        `💤 我正在休眠中...\n\n` +
-        `使用 /wakeup 唤醒我吧！`,
-        Markup.inlineKeyboard([
-          [Markup.button.callback('唤醒AI', 'wakeup')]
-        ])
-      );
-      return;
-    }
-    
-    // 处理对话并更新贡献值
-    const result = await this.memoryPoints.processDialogue(session.userId, message);
-    
-    // 生成AI回复（这里应该调用OpenClaw）
-    let aiReply = await this.generateAIReply(session.userId, message, result.qualityResult);
-    
-    // 如果有里程碑达成，添加提示
-    if (result.updateResult?.milestonesReached?.length) {
-      const milestone = result.updateResult.milestonesReached[0];
-      aiReply += `\n\n🎉 解锁新能力：${milestone.title}！`;
-    }
-    
-    await ctx.reply(aiReply);
   }
   
   /**
@@ -386,23 +434,33 @@ export class TelegramBotService {
     const data = callbackQuery.data;
     const telegramUserId = callbackQuery.from.id;
     
-    switch (data) {
-      case 'start_chat':
-        await ctx.answerCbQuery('开始对话！');
-        await ctx.reply('好的，让我们开始吧！你想聊些什么？');
-        break;
-        
-      case 'wakeup':
-        const session = await this.getUserSession(telegramUserId);
-        if (session) {
-          const result = await this.centralEvaluation.wakeupAI(session.userId);
-          await ctx.answerCbQuery(result.message);
-          await ctx.reply(`🌅 ${result.message}\n\n让我们重新开始吧！`);
-        }
-        break;
-        
-      default:
-        await ctx.answerCbQuery('未知操作');
+    try {
+      switch (data) {
+        case 'start_chat':
+          await ctx.answerCbQuery('开始对话！');
+          // 更新新手引导进度
+          const userForStart = await this.userService.getUserByTelegramId(telegramUserId);
+          if (userForStart && userForStart.user.onboardingStep < 1) {
+            await this.userService.updateOnboardingStep(userForStart.user.id, 1);
+          }
+          await ctx.reply('好的，让我们开始吧！你想聊些什么？');
+          break;
+          
+        case 'wakeup':
+          const userWithAI = await this.userService.getUserByTelegramId(telegramUserId);
+          if (userWithAI) {
+            const result = await this.centralEvaluation.wakeupAI(userWithAI.user.id);
+            await ctx.answerCbQuery(result.message);
+            await ctx.reply(`🌅 ${result.message}\n\n让我们重新开始吧！`);
+          }
+          break;
+          
+        default:
+          await ctx.answerCbQuery('未知操作');
+      }
+    } catch (err) {
+      console.error('处理回调失败:', err);
+      await ctx.answerCbQuery('操作失败');
     }
   }
   
@@ -468,35 +526,6 @@ export class TelegramBotService {
     } catch (err) {
       console.error('发送通知失败:', err);
     }
-  }
-  
-  /**
-   * 获取或创建用户
-   */
-  private async getOrCreateUser(telegramUserId: number, telegramUsername?: string): Promise<UserSession> {
-    // TODO: 实现数据库操作
-    // 目前返回模拟数据
-    return {
-      userId: `user_${telegramUserId}`,
-      telegramUserId,
-      aiPartnerId: `ai_${telegramUserId}`,
-      status: 'new',
-      onboardingStep: 0
-    };
-  }
-  
-  /**
-   * 获取用户会话
-   */
-  private async getUserSession(telegramUserId: number): Promise<UserSession | null> {
-    // TODO: 实现数据库操作
-    return {
-      userId: `user_${telegramUserId}`,
-      telegramUserId,
-      aiPartnerId: `ai_${telegramUserId}`,
-      status: 'active',
-      onboardingStep: 4
-    };
   }
   
   /**
