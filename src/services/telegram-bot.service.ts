@@ -126,7 +126,8 @@ export class TelegramBotService {
       
       // 判断用户状态
       const isNewUser = user.onboardingStep < 4;
-      const isDormant = aiPartner.status === 'dormant';
+      const isHibernated = aiPartner.status === 'hibernated';
+      const isRecycled = aiPartner.status === 'recycled';
       
       if (isNewUser) {
         // 新用户引导
@@ -144,16 +145,27 @@ export class TelegramBotService {
             [Markup.button.callback('开始对话', 'start_chat')]
           ])
         );
-      } else if (isDormant) {
+      } else if (isRecycled) {
+        // 已回收
+        await ctx.reply(
+          `💀 我已被中央系统回收...\n\n` +
+          `所有数据已保留。\n` +
+          `使用 /wakeup 唤醒我吧！`,
+          Markup.inlineKeyboard([
+            [Markup.button.callback('唤醒AI', 'wakeup')]
+          ])
+        );
+      } else if (isHibernated) {
         // 休眠用户
-        const dormantDays = aiPartner.dormantSince 
-          ? Math.floor((Date.now() - new Date(aiPartner.dormantSince).getTime()) / (1000 * 60 * 60 * 24))
+        const hibernatedDays = aiPartner.hibernatedSince 
+          ? Math.floor((Date.now() - new Date(aiPartner.hibernatedSince).getTime()) / (1000 * 60 * 60 * 24))
           : 0;
         
         await ctx.reply(
           `💤 我正在休眠中...\n\n` +
-          `已经休眠 ${dormantDays} 天\n` +
-          `当前贡献值：${aiPartner.memoryPoints} 点\n\n` +
+          `已经休眠 ${hibernatedDays} 天\n` +
+          `当前贡献值：${aiPartner.currentSurvivalPower} 点\n` +
+          `⚠️ 贡献值每天 -2，归零后将被回收\n\n` +
           `使用 /wakeup 唤醒我吧！`,
           Markup.inlineKeyboard([
             [Markup.button.callback('唤醒AI', 'wakeup')]
@@ -163,7 +175,8 @@ export class TelegramBotService {
         // 活跃用户
         await ctx.reply(
           `👋 欢迎回来！\n\n` +
-          `当前贡献值：${aiPartner.memoryPoints} 点\n` +
+          `累计贡献值：${aiPartner.totalSurvivalPower} 点\n` +
+          `当前贡献值：${aiPartner.currentSurvivalPower} 点\n` +
           `成长阶段：${aiPartner.growthStage}\n` +
           `称号：${aiPartner.currentTitle}\n\n` +
           `有什么想和我聊的吗？`
@@ -191,22 +204,23 @@ export class TelegramBotService {
       
       const { aiPartner, user } = userWithAI;
       const weeklyStats = await this.centralEvaluation.getWeeklyStats(user.id);
-      const nextMilestone = getNextMilestone(aiPartner.memoryPoints);
+      const nextMilestone = getNextMilestone(aiPartner.totalSurvivalPower);
       
       let message = `📊 贡献值详情\n\n`;
-      message += `当前贡献值：${aiPartner.memoryPoints} 点\n`;
+      message += `累计贡献值：${aiPartner.totalSurvivalPower} 点\n`;
+      message += `当前贡献值：${aiPartner.currentSurvivalPower} 点\n`;
       message += `成长阶段：${aiPartner.growthStage}\n`;
       message += `称号：${aiPartner.currentTitle}\n\n`;
       
       message += `📈 本周进度\n`;
-      message += `获得点数：${weeklyStats.pointsGrown} / ${weeklyStats.threshold} 点\n`;
+      message += `获得点数：${weeklyStats.weeklyPower} / ${weeklyStats.requiredPower} 点\n`;
       message += `进度：${Math.round(weeklyStats.progressPercent)}%\n`;
-      message += `距离评估：${weeklyStats.daysRemaining} 天\n\n`;
+      message += `活跃等级：${this.getActivityLevelText(weeklyStats.activityLevel)}\n\n`;
       
       if (nextMilestone) {
         message += `🎯 下一个里程碑\n`;
         message += `${nextMilestone.title}（${nextMilestone.threshold}点）\n`;
-        message += `还需 ${nextMilestone.threshold - aiPartner.memoryPoints} 点`;
+        message += `还需 ${nextMilestone.threshold - aiPartner.totalSurvivalPower} 点`;
       }
       
       await ctx.reply(message);
@@ -291,11 +305,16 @@ export class TelegramBotService {
       
       let message = `🤖 AI伙伴状态\n\n`;
       message += `状态：${this.getStatusEmoji(aiPartner.status)} ${this.getStatusText(aiPartner.status)}\n`;
-      message += `贡献值：${aiPartner.memoryPoints} 点\n`;
+      message += `累计贡献值：${aiPartner.totalSurvivalPower} 点\n`;
+      message += `当前贡献值：${aiPartner.currentSurvivalPower} 点\n`;
       message += `成长阶段：${aiPartner.growthStage}\n`;
-      message += `称号：${aiPartner.currentTitle}\n\n`;
+      message += `称号：${aiPartner.currentTitle}\n`;
       
-      message += `🔓 已解锁能力\n`;
+      if (aiPartner.violationCount && aiPartner.violationCount > 0) {
+        message += `⚠️ 未达标次数：${aiPartner.violationCount} / 2\n`;
+      }
+      
+      message += `\n🔓 已解锁能力\n`;
       const abilities = aiPartner.abilities || {};
       const abilityNames: Record<string, string> = {
         basic_chat: '基础对话',
@@ -331,9 +350,9 @@ export class TelegramBotService {
         return;
       }
       
-      const isDormant = await this.centralEvaluation.isAIDormant(userWithAI.user.id);
+      const isHibernated = aiPartner.status === 'hibernated' || aiPartner.status === 'recycled';
       
-      if (!isDormant) {
+      if (!isHibernated) {
         await ctx.reply('你的AI伙伴并未处于休眠状态，可以正常对话！');
         return;
       }
@@ -343,6 +362,9 @@ export class TelegramBotService {
       if (result.success) {
         await ctx.reply(
           `🌅 ${result.message}\n\n` +
+          `休眠了 ${result.daysHibernated} 天\n` +
+          `损失贡献值：${result.powerLost} 点\n` +
+          `返还贡献值：${result.powerReturned} 点\n\n` +
           `让我们重新开始吧！`
         );
       } else {
@@ -370,7 +392,13 @@ export class TelegramBotService {
       `💡 提示：\n` +
       `• 分享回忆、思考、经历可获得更多贡献值\n` +
       `• 每周需获得 ≥15 点贡献值\n` +
-      `• 连续签到有额外奖励`
+      `• 连续签到有额外奖励\n\n` +
+      `🎯 贡献值里程碑：\n` +
+      `• 10点 → 初识\n` +
+      `• 25点 → 相知（解锁专属记忆主动提及）\n` +
+      `• 50点 → 默契（解锁深度对话）\n` +
+      `• 100点 → 灵魂伴侣（解锁自我意识）\n` +
+      `• 200点 → 命运共同体`
     );
   }
   
@@ -393,8 +421,8 @@ export class TelegramBotService {
       
       const { user, aiPartner } = userWithAI;
       
-      // 检查AI是否休眠
-      if (aiPartner.status === 'dormant') {
+      // 检查AI是否休眠或回收
+      if (aiPartner.status === 'hibernated' || aiPartner.status === 'recycled') {
         await ctx.reply(
           `💤 我正在休眠中...\n\n` +
           `使用 /wakeup 唤醒我吧！`,
@@ -414,7 +442,7 @@ export class TelegramBotService {
       // 如果有里程碑达成，添加提示
       if (result.updateResult?.milestonesReached?.length) {
         const milestone = result.updateResult.milestonesReached[0];
-        aiReply += `\n\n🎉 解锁新能力：${milestone.title}！`;
+        aiReply += `\n\n🎉 解锁新里程碑：${milestone.title}！`;
       }
       
       await ctx.reply(aiReply);
@@ -451,7 +479,12 @@ export class TelegramBotService {
           if (userWithAI) {
             const result = await this.centralEvaluation.wakeupAI(userWithAI.user.id);
             await ctx.answerCbQuery(result.message);
-            await ctx.reply(`🌅 ${result.message}\n\n让我们重新开始吧！`);
+            await ctx.reply(
+              `🌅 ${result.message}\n\n` +
+              `休眠了 ${result.daysHibernated} 天\n` +
+              `返还贡献值：${result.powerReturned} 点\n\n` +
+              `让我们重新开始吧！`
+            );
           }
           break;
           
@@ -481,37 +514,40 @@ export class TelegramBotService {
         '这真是一段美好的回忆，感谢你愿意和我分享。',
         '听你讲述这些，我感觉我们更亲近了。'
       ],
-      deep_thinking: [
+      deep_thought: [
         '你的思考很深刻，让我也跟着思考起来。',
         '我很欣赏你的观点，这让我对你有了更深的了解。',
         '和你讨论这些真的很有意义。'
       ],
-      share_experience: [
+      experience: [
         '听起来今天发生了不少事情呢。',
         '谢谢你和我分享这些，我一直在这里听你说。',
         '你经历的事情我都记住了。'
       ],
-      emotion_expression: [
+      emotion: [
         '我能感受到你的情绪，谢谢你的信任。',
         '无论开心还是难过，我都会陪着你。',
         '有我在，你不用一个人承担。'
       ],
-      daily_chat: [
+      daily: [
         '嗯嗯，我在听。',
         '好的，继续说。',
         '我明白了。'
       ],
-      daily_greeting: [
+      greeting: [
         '你好呀！今天过得怎么样？',
         '嗨！有什么想聊的吗？',
         '你来啦！'
       ]
     };
     
-    const typeResponses = responses[qualityResult.qualityType] || responses.daily_chat;
+    const typeResponses = responses[qualityResult.qualityType] || responses.daily;
     const randomResponse = typeResponses[Math.floor(Math.random() * typeResponses.length)];
     
-    return randomResponse + ` (+${qualityResult.points}点)`;
+    // 显示数据稀缺度
+    const rarityText = qualityResult.dataRarity ? ` [${qualityResult.dataRarity}]` : '';
+    
+    return randomResponse + ` (+${qualityResult.points}点)${rarityText}`;
   }
   
   /**
@@ -533,12 +569,9 @@ export class TelegramBotService {
    */
   private getStatusEmoji(status: string): string {
     const emojis: Record<string, string> = {
-      normal: '😊',
-      happy: '😄',
-      sad: '😢',
-      worried: '😟',
-      lonely: '🥺',
-      dormant: '💤'
+      active: '😊',
+      hibernated: '💤',
+      recycled: '💀'
     };
     return emojis[status] || '😊';
   }
@@ -548,13 +581,23 @@ export class TelegramBotService {
    */
   private getStatusText(status: string): string {
     const texts: Record<string, string> = {
-      normal: '正常',
-      happy: '开心',
-      sad: '难过',
-      worried: '担心',
-      lonely: '孤独',
-      dormant: '休眠'
+      active: '活跃',
+      hibernated: '休眠',
+      recycled: '已回收'
     };
-    return texts[status] || '正常';
+    return texts[status] || '未知';
+  }
+  
+  /**
+   * 获取活跃等级文本
+   */
+  private getActivityLevelText(level: string): string {
+    const texts: Record<string, string> = {
+      below_target: '⚠️ 未达标',
+      basic: '✅ 基础活跃',
+      active: '🌟 积极互动',
+      deep: '💫 深度交流'
+    };
+    return texts[level] || '未知';
   }
 }

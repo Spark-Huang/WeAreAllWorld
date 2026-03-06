@@ -26,10 +26,14 @@ export interface UserWithAI {
     id: string;
     name: string;
     personality: string;
-    memoryPoints: number;
+    totalSurvivalPower: number;      // 累计贡献值
+    currentSurvivalPower: number;    // 当前贡献值
+    weeklyNewPower: number;          // 本周新增贡献值
     growthStage: string;
     currentTitle: string;
-    status: string;
+    status: string;                  // active, hibernated, recycled
+    violationCount: number;          // 连续未达标周数
+    hibernatedSince?: string;        // 休眠开始时间
     abilities: Record<string, boolean>;
   } | null;
 }
