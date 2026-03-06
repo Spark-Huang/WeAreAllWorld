@@ -260,9 +260,11 @@ DECLARE
   v_new_abilities JSONB;
   v_old_abilities JSONB;
 BEGIN
+  -- 【修复竞态条件】使用 FOR UPDATE 行级锁，防止并发更新丢失
   SELECT total_contribution, weekly_contribution, abilities 
   INTO v_current_total, v_current_weekly, v_old_abilities
-  FROM public.ai_partners WHERE user_id = p_user_id;
+  FROM public.ai_partners WHERE user_id = p_user_id
+  FOR UPDATE;  -- 关键修复：行级锁
   
   IF v_current_total IS NULL THEN
     RETURN jsonb_build_object('error', 'AI partner not found');
