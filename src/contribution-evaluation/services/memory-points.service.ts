@@ -10,6 +10,7 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { qualityJudgeService, QualityResult } from './quality-judge.service';
+import { llmQualityJudgeService } from './llm-quality-judge.service';
 
 export interface UpdatePointsResult {
   success: boolean;
@@ -73,6 +74,10 @@ const TITLES: { minPoints: number; title: string }[] = [
   { minPoints: 0, title: '初识' }
 ];
 
+// 是否使用 LLM 质量判定（默认禁用，因为LLM有速率限制）
+// 质量判定使用关键词匹配，AI回复使用LLM
+const USE_LLM_QUALITY_JUDGE = process.env.USE_LLM_QUALITY_JUDGE === 'true';
+
 /**
  * 贡献值服务
  */
@@ -94,21 +99,64 @@ export class MemoryPointsService {
     qualityResult: QualityResult;
     updateResult: UpdatePointsResult | null;
   }> {
-    // 1. 判定对话质量
-    const qualityResult = qualityJudgeService.calculateQuality(message, conversationHistory);
+    // 1. 先使用关键词匹配快速判定（同步，立即返回）
+    const quickResult = qualityJudgeService.calculateQuality(message, conversationHistory);
     
-    // 2. 更新贡献值
+    // 2. 异步使用 LLM 进行更精准的判定（不阻塞响应）
+    if (USE_LLM_QUALITY_JUDGE) {
+      // 异步执行 LLM 判定，不等待结果
+      this.asyncLLMJudge(userId, message, conversationHistory, quickResult).catch(err => {
+        console.error('异步 LLM 质量判定失败:', err);
+      });
+    }
+    
+    // 3. 立即使用快速判定结果更新贡献值
     const updateResult = await this.updatePoints(
       userId,
-      qualityResult.points,
+      quickResult.points,
       'dialogue',
-      qualityResult.reason
+      quickResult.reason
     );
     
     return {
-      qualityResult,
+      qualityResult: quickResult,
       updateResult
     };
+  }
+  
+  /**
+   * 异步 LLM 质量判定（后台执行）
+   * 如果 LLM 判定结果与快速判定不同，会调整贡献值
+   */
+  private async asyncLLMJudge(
+    userId: string,
+    message: string,
+    conversationHistory: string[] | undefined,
+    quickResult: QualityResult
+  ): Promise<void> {
+    try {
+      const llmResult = await llmQualityJudgeService.calculateQuality(message, conversationHistory);
+      console.log('LLM 质量判定结果:', llmResult.qualityType, llmResult.points, llmResult.reason);
+      
+      // 如果 LLM 判定结果与快速判定不同，进行补偿调整
+      const pointsDiff = llmResult.points - quickResult.points;
+      
+      if (pointsDiff !== 0) {
+        console.log(`LLM 判定调整: 快速=${quickResult.points}, LLM=${llmResult.points}, 差异=${pointsDiff}`);
+        
+        // 补偿或扣除差异点数
+        if (pointsDiff > 0) {
+          // LLM 判定更高，补偿差异
+          await this.updatePoints(userId, pointsDiff, 'llm_adjustment', `LLM调整: ${llmResult.reason}`);
+        } else {
+          // LLM 判定更低，扣除差异（暂不扣除，避免用户体验问题）
+          // 实际生产中可以考虑记录日志用于分析
+          console.log(`LLM 判定更低，记录但不扣除: ${pointsDiff}`);
+        }
+      }
+    } catch (error) {
+      console.error('异步 LLM 质量判定失败:', error);
+    }
   }
   
   /**
