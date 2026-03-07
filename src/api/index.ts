@@ -13,6 +13,7 @@ import { aiPartnerRouter } from './routes/ai-partner.routes';
 import { dialogueRouter } from './routes/dialogue.routes';
 import { statsRouter } from './routes/stats.routes';
 import { botKeyRouter } from './routes/bot-key.routes';
+import { adminRouter } from './routes/admin.routes';
 
 // 中间件
 import { authMiddleware } from './middleware/auth.middleware';
@@ -97,6 +98,9 @@ app.use(`${API_PREFIX}/ai-partner`, authMiddleware, aiPartnerRouter);
 app.use(`${API_PREFIX}/dialogue`, authMiddleware, dialogueRouter);
 app.use(`${API_PREFIX}/stats`, authMiddleware, statsRouter);
 app.use(`${API_PREFIX}/bot-key`, authMiddleware, botKeyRouter);
+
+// 管理员路由（需要 Admin API Key）
+app.use(`${API_PREFIX}/admin`, adminRouter);
 
 // 404 处理
 app.use((_req: Request, res: Response) => {
