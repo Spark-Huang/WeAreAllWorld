@@ -14,9 +14,9 @@
 
 import { QualityResult } from './quality-judge.service';
 
-// LLM API 配置
+// LLM API 配置（用于质量评估，与对话生成分开）
 const LLM_API_URL = process.env.LLM_BASE_URL || 'https://api.modelarts-maas.com/v2';
-const LLM_API_KEY = process.env.LLM_API_KEY || 'yHWayr9vys-0Rr2VepqIpQQJPgZY80BDhAmaPQ_EFQ5MCi9j8k7aduptjL7yusJ42vJeZgzV516EY0SjEW-hOQ';
+const LLM_API_KEY = process.env.LLM_QUALITY_API_KEY || process.env.LLM_API_KEY || '';
 const LLM_MODEL = process.env.LLM_MODEL || 'glm-5';
 
 /**
