@@ -171,7 +171,80 @@ else
 fi
 
 echo ""
-echo "========== 4. 功能测试 =========="
+echo "========== 4. 剧情系统测试 =========="
+echo ""
+
+# STORY-001: 获取章节列表
+CHAPTERS_RESULT=$(curl -s "${BASE_URL}/api/v1/story/chapters" \
+    -H "Authorization: Bearer ${ACCESS_TOKEN}")
+if echo "$CHAPTERS_RESULT" | jq -e '.success' > /dev/null 2>&1; then
+    CHAPTER_COUNT=$(echo "$CHAPTERS_RESULT" | jq '.data | length')
+    if [[ "$CHAPTER_COUNT" -eq 5 ]]; then
+        test_case "STORY-001: 获取章节列表" "PASS"
+    else
+        test_case "STORY-001: 获取章节列表 (章节数不对)" "FAIL"
+    fi
+else
+    test_case "STORY-001: 获取章节列表" "FAIL"
+fi
+
+# STORY-002: 获取当前剧情状态
+STORY_RESULT=$(curl -s "${BASE_URL}/api/v1/story" \
+    -H "Authorization: Bearer ${ACCESS_TOKEN}")
+if echo "$STORY_RESULT" | jq -e '.success' > /dev/null 2>&1; then
+    SCENE_ID=$(echo "$STORY_RESULT" | jq -r '.data.currentScene.id')
+    if [[ "$SCENE_ID" != "null" && "$SCENE_ID" != "" ]]; then
+        test_case "STORY-002: 获取当前剧情状态" "PASS"
+    else
+        test_case "STORY-002: 获取当前剧情状态 (无场景)" "FAIL"
+    fi
+else
+    test_case "STORY-002: 获取当前剧情状态" "FAIL"
+fi
+
+# STORY-003: 获取可用剧情状态
+AVAILABLE_RESULT=$(curl -s "${BASE_URL}/api/v1/story/available" \
+    -H "Authorization: Bearer ${ACCESS_TOKEN}")
+if echo "$AVAILABLE_RESULT" | jq -e '.success' > /dev/null 2>&1; then
+    UNLOCKED=$(echo "$AVAILABLE_RESULT" | jq '.data.unlockedChapters | length')
+    if [[ "$UNLOCKED" -ge 1 ]]; then
+        test_case "STORY-003: 获取可用剧情状态" "PASS"
+    else
+        test_case "STORY-003: 获取可用剧情状态 (无解锁章节)" "FAIL"
+    fi
+else
+    test_case "STORY-003: 获取可用剧情状态" "FAIL"
+fi
+
+# STORY-004: 推进剧情
+ADVANCE_RESULT=$(curl -s -X POST "${BASE_URL}/api/v1/story/advance" \
+    -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d '{}')
+if echo "$ADVANCE_RESULT" | jq -e '.success' > /dev/null 2>&1; then
+    test_case "STORY-004: 推进剧情" "PASS"
+else
+    test_case "STORY-004: 推进剧情" "FAIL"
+fi
+
+# STORY-005: 验证场景类型
+SCENE_TYPE=$(echo "$STORY_RESULT" | jq -r '.data.currentScene.type')
+if [[ "$SCENE_TYPE" =~ ^(narrative|dialogue|choice|milestone)$ ]]; then
+    test_case "STORY-005: 场景类型正确" "PASS"
+else
+    test_case "STORY-005: 场景类型正确" "FAIL"
+fi
+
+# STORY-006: 验证章节解锁状态
+FIRST_CHAPTER_UNLOCKED=$(echo "$CHAPTERS_RESULT" | jq '.data[0].unlocked')
+if [[ "$FIRST_CHAPTER_UNLOCKED" == "true" ]]; then
+    test_case "STORY-006: 第一章默认解锁" "PASS"
+else
+    test_case "STORY-006: 第一章默认解锁" "FAIL"
+fi
+
+echo ""
+echo "========== 5. 功能测试 =========="
 echo ""
 
 # FUNC-001: 验证AI伙伴状态

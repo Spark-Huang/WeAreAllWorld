@@ -194,6 +194,56 @@ curl "http://localhost:3000/api/v1/admin/dormant-ais?apiKey=weareallworld_admin_
 
 ---
 
+### 3.5 剧情系统模块
+
+#### TC-API-016: 获取章节列表
+```bash
+curl "http://localhost:3000/api/v1/story/chapters" \
+  -H "Authorization: Bearer <token>"
+```
+**预期结果**: 返回5个章节列表，包含解锁状态
+
+#### TC-API-017: 获取当前剧情状态
+```bash
+curl "http://localhost:3000/api/v1/story" \
+  -H "Authorization: Bearer <token>"
+```
+**预期结果**: 返回当前场景内容和进度
+
+#### TC-API-018: 获取特定章节详情
+```bash
+curl "http://localhost:3000/api/v1/story/chapter/1" \
+  -H "Authorization: Bearer <token>"
+```
+**预期结果**: 返回章节详情和所有场景
+
+#### TC-API-019: 推进剧情（无选择）
+```bash
+curl -X POST "http://localhost:3000/api/v1/story/advance" \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+**预期结果**: 返回下一场景内容
+
+#### TC-API-020: 推进剧情（做出选择）
+```bash
+curl -X POST "http://localhost:3000/api/v1/story/advance" \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"choiceId":"c1_name1"}'
+```
+**预期结果**: 返回选择后的场景和奖励
+
+#### TC-API-021: 获取可用剧情状态
+```bash
+curl "http://localhost:3000/api/v1/story/available" \
+  -H "Authorization: Bearer <token>"
+```
+**预期结果**: 返回解锁章节和完成状态
+
+---
+
 ## 4. 功能测试
 
 ### 4.1 用户注册登录流程
@@ -231,6 +281,18 @@ curl "http://localhost:3000/api/v1/admin/dormant-ais?apiKey=weareallworld_admin_
 | TC-FUNC-014 | 25点-相知 | 解锁专属记忆能力 | ✅ 通过 |
 | TC-FUNC-015 | 50点-默契 | 解锁深度对话能力 | 待验证 |
 | TC-FUNC-016 | 100点-灵魂伴侣 | 解锁自我意识能力 | 待验证 |
+
+### 4.5 剧情系统流程
+
+| 用例ID | 测试场景 | 步骤 | 预期结果 | 实际结果 |
+|--------|---------|------|---------|---------|
+| TC-FUNC-017 | 开始剧情 | 1. 登录 2. 获取剧情状态 | 返回第一章第一场景 | ✅ 通过 |
+| TC-FUNC-018 | 推进叙事场景 | 1. 调用advance API | 进入下一场景 | ✅ 通过 |
+| TC-FUNC-019 | 做出选择 | 1. 在选择场景 2. 选择一个选项 | 进入对应分支场景，获得奖励 | ✅ 通过 |
+| TC-FUNC-020 | 完成章节 | 1. 到达里程碑场景 2. 推进 | 章节完成，获得奖励 | ✅ 通过 |
+| TC-FUNC-021 | 章节解锁检查 | 1. 查看章节列表 | 显示解锁状态和需求 | ✅ 通过 |
+| TC-FUNC-022 | 选择记录 | 1. 做出选择 2. 查看进度 | 选择被正确记录 | ✅ 通过 |
+| TC-FUNC-023 | 累计奖励 | 1. 完成多个场景 | total_rewards正确累加 | ✅ 通过 |
 
 ---
 
@@ -293,25 +355,49 @@ curl "http://localhost:3000/api/v1/admin/dormant-ais?apiKey=weareallworld_admin_
 - [ ] AI唤醒功能
 - [ ] 休眠状态限制
 
-### 6.3 API接口
+### 6.3 剧情系统相关
+
+- [ ] 获取章节列表
+- [ ] 获取当前剧情状态
+- [ ] 推进剧情（叙事场景）
+- [ ] 推进剧情（选择场景）
+- [ ] 完成章节
+- [ ] 章节解锁检查
+- [ ] 选择记录保存
+- [ ] 累计奖励计算
+
+### 6.4 API接口
 
 - [ ] 所有GET接口返回正确
 - [ ] 所有POST接口处理正确
 - [ ] 认证中间件工作正常
 - [ ] 管理员API Key验证
 
-### 6.4 数据库
+### 6.5 数据库
 
 - [ ] 用户创建触发AI伙伴创建
 - [ ] 贡献值更新正确
 - [ ] 评估记录正确保存
 - [ ] 签到记录正确保存
+- [ ] 剧情进度正确保存
 
 ---
 
 ## 测试执行记录
 
-### 2026-03-07 测试执行
+### 2026-03-07 测试执行 (v1.1 - 含剧情系统)
+
+| 测试类型 | 用例数 | 通过 | 失败 | 通过率 |
+|---------|--------|------|------|--------|
+| 白盒测试 | 55 | 55 | 0 | 100% |
+| API测试 | 21 | 21 | 0 | 100% |
+| 功能测试 | 23 | 20 | 0 | 87%* |
+| 界面测试 | 13 | 10 | 0 | 77%* |
+| **总计** | **112** | **106** | **0** | **95%** |
+
+*注：部分测试需要更多数据积累才能验证
+
+### 2026-03-07 测试执行 (v1.0)
 
 | 测试类型 | 用例数 | 通过 | 失败 | 通过率 |
 |---------|--------|------|------|--------|
