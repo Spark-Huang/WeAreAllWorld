@@ -38,9 +38,12 @@ export class AsyncQualityEvaluationService {
   private supabase: SupabaseClient;
   private isRunning: boolean = false;
   private intervalId: NodeJS.Timeout | null = null;
+  private sessionCheckIntervalId: NodeJS.Timeout | null = null;
   
   // 评估间隔（毫秒）
   private readonly EVALUATION_INTERVAL = 15 * 60 * 1000; // 15分钟
+  // 会话超时时间（毫秒）
+  private readonly SESSION_TIMEOUT = 5 * 60 * 1000; // 5分钟
   
   constructor(supabaseUrl: string, supabaseKey: string) {
     this.supabase = createClient(supabaseUrl, supabaseKey);
@@ -58,17 +61,27 @@ export class AsyncQualityEvaluationService {
     this.isRunning = true;
     console.log(`🚀 异步质量评估服务已启动，间隔: ${this.EVALUATION_INTERVAL / 60000} 分钟`);
     
-    // 立即执行一次
+    // 立即执行一次（检查超时会话 + 评估）
+    this.checkAndEndTimeoutSessions().catch(err => {
+      console.error('检查超时会话失败:', err);
+    });
     this.runEvaluation().catch(err => {
       console.error('初始评估失败:', err);
     });
     
-    // 设置定时任务
+    // 设置定时任务（每15分钟评估）
     this.intervalId = setInterval(() => {
       this.runEvaluation().catch(err => {
         console.error('定时评估失败:', err);
       });
     }, this.EVALUATION_INTERVAL);
+    
+    // 设置会话检查任务（每1分钟检查超时会话）
+    this.sessionCheckIntervalId = setInterval(() => {
+      this.checkAndEndTimeoutSessions().catch(err => {
+        console.error('检查超时会话失败:', err);
+      });
+    }, 60000); // 1分钟
   }
   
   /**
@@ -79,8 +92,44 @@ export class AsyncQualityEvaluationService {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
+    if (this.sessionCheckIntervalId) {
+      clearInterval(this.sessionCheckIntervalId);
+      this.sessionCheckIntervalId = null;
+    }
     this.isRunning = false;
     console.log('⏹️ 异步质量评估服务已停止');
+  }
+  
+  /**
+   * 检查并结束超时会话
+   */
+  async checkAndEndTimeoutSessions(): Promise<number> {
+    const timeoutThreshold = new Date(Date.now() - this.SESSION_TIMEOUT).toISOString();
+    
+    // 查找超时的会话（started_at 超过5分钟且未结束）
+    const { data: timeoutSessions, error } = await this.supabase
+      .from('dialogue_sessions')
+      .select('id, user_id')
+      .is('ended_at', null)
+      .lt('started_at', timeoutThreshold);
+    
+    if (error) {
+      console.error('查询超时会话失败:', error);
+      return 0;
+    }
+    
+    if (!timeoutSessions || timeoutSessions.length === 0) {
+      return 0;
+    }
+    
+    console.log(`发现 ${timeoutSessions.length} 个超时会话，正在结束...`);
+    
+    // 结束每个超时会话
+    for (const session of timeoutSessions) {
+      await this.endSession(session.id);
+    }
+    
+    return timeoutSessions.length;
   }
   
   /**
