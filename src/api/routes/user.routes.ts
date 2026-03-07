@@ -31,12 +31,61 @@ router.post('/register', async (req: Request, res: Response) => {
       data: {
         user: result.user,
         aiPartner: result.aiPartner,
-        isNewUser: !result.aiPartner // 简单判断：没有AI伙伴就是新用户
+        isNewUser: !result.aiPartner
       }
     });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+/**
+ * POST /api/v1/auth/create-user
+ * 为 Supabase Auth 用户创建数据库记录
+ */
+router.post('/create-user', async (req: Request, res: Response) => {
+  try {
+    const { userId, telegramUsername } = req.body;
+    
+    if (!userId) {
+      res.status(400).json({ error: 'userId is required' });
+      return;
+    }
+    
+    // 检查用户是否已存在
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+    
+    if (existingUser) {
+      res.json({ success: true, message: 'User already exists' });
+      return;
+    }
+    
+    // 创建用户记录（触发器会自动创建AI伙伴）
+    const { error } = await supabase
+      .from('users')
+      .insert({
+        id: userId,
+        telegram_user_id: Math.floor(Math.random() * 1000000000),
+        telegram_username: telegramUsername || 'web_user',
+        onboarding_step: 0,
+        onboarding_completed: false
+      });
+    
+    if (error) {
+      console.error('Create user error:', error);
+      res.status(500).json({ error: 'Failed to create user' });
+      return;
+    }
+    
+    res.json({ success: true, message: 'User created' });
+  } catch (err) {
+    console.error('Create user error:', err);
+    res.status(500).json({ error: 'Failed to create user' });
   }
 });
 

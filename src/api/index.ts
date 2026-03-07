@@ -43,28 +43,50 @@ app.get('/health', (_req: Request, res: Response) => {
   });
 });
 
+// 根路径 - 欢迎页面
+app.get('/', (_req: Request, res: Response) => {
+  res.json({
+    name: '天下一家 (WeAreAll.World)',
+    version: '1.0.0',
+    description: 'AI伙伴养成 + 文字冒险 + 实用助手平台',
+    endpoints: {
+      health: '/health',
+      api: '/api/v1',
+      auth: {
+        register: 'POST /api/v1/auth/register'
+      },
+      user: {
+        profile: 'GET /api/v1/user/profile'
+      },
+      aiPartner: {
+        info: 'GET /api/v1/ai-partner',
+        checkin: 'POST /api/v1/ai-partner/checkin',
+        milestones: 'GET /api/v1/ai-partner/milestones'
+      },
+      dialogue: {
+        send: 'POST /api/v1/dialogue',
+        history: 'GET /api/v1/dialogue/history'
+      },
+      stats: {
+        weekly: 'GET /api/v1/stats/weekly',
+        overview: 'GET /api/v1/stats/overview'
+      }
+    },
+    documentation: 'https://github.com/Spark-Huang/WeAreAllWorld'
+  });
+});
+
 // API 版本路由
 const API_PREFIX = '/api/v1';
-
-// 开发模式：跳过认证
-const devAuthMiddleware = (req: Request, _res: Response, next: NextFunction) => {
-  if (process.env.NODE_ENV !== 'production') {
-    // 开发模式下，从请求头或请求体获取用户ID
-    req.user = { 
-      id: req.headers['x-user-id'] as string || req.body?.userId 
-    };
-  }
-  next();
-};
 
 // 公开路由（无需认证）
 app.use(`${API_PREFIX}/auth`, userRouter);
 
 // 受保护路由（需要认证）
-app.use(`${API_PREFIX}/user`, devAuthMiddleware, authMiddleware, userRouter);
-app.use(`${API_PREFIX}/ai-partner`, devAuthMiddleware, authMiddleware, aiPartnerRouter);
-app.use(`${API_PREFIX}/dialogue`, devAuthMiddleware, authMiddleware, dialogueRouter);
-app.use(`${API_PREFIX}/stats`, devAuthMiddleware, authMiddleware, statsRouter);
+app.use(`${API_PREFIX}/user`, authMiddleware, userRouter);
+app.use(`${API_PREFIX}/ai-partner`, authMiddleware, aiPartnerRouter);
+app.use(`${API_PREFIX}/dialogue`, authMiddleware, dialogueRouter);
+app.use(`${API_PREFIX}/stats`, authMiddleware, statsRouter);
 
 // 404 处理
 app.use((_req: Request, res: Response) => {

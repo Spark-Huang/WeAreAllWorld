@@ -1,17 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
+import { supabase } from './lib/supabase'
+import type { User, Session } from '@supabase/supabase-js'
 import './App.css'
 
 // API 基础地址
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
 
 // 类型定义
-interface User {
-  id: string
-  telegram_user_id: number
-  telegram_username: string
-  onboarding_completed: boolean
-}
-
 interface AIPartner {
   id: string
   user_id: string
@@ -27,9 +22,6 @@ interface QualityResult {
   qualityType: string
   points: number
   reason: string
-  emotionDetected: string
-  shouldCreateMemory: boolean
-  dataRarity: string
 }
 
 interface ChatMessage {
@@ -42,21 +34,39 @@ interface ChatMessage {
 
 function App() {
   const [user, setUser] = useState<User | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
   const [partner, setPartner] = useState<AIPartner | null>(null)
   const [message, setMessage] = useState('')
-  const [lastResult, setLastResult] = useState<QualityResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'chat' | 'stats' | 'milestones'>('chat')
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('register')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [authLoading, setAuthLoading] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
-  // 模拟登录（实际应使用 Supabase Auth）
+  // 监听认证状态变化
   useEffect(() => {
-    // 检查本地存储的用户信息
-    const savedUser = localStorage.getItem('weareallworld_user')
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
-    }
+    // 获取当前会话
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+      if (session?.user) {
+        loadPartner(session)
+      }
+    })
+
+    // 监听认证状态变化
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+      if (session?.user) {
+        loadPartner(session)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   // 滚动到底部
@@ -64,39 +74,95 @@ function App() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatHistory])
 
-  // 注册/登录
-  const handleLogin = async (telegramId: string) => {
+  // 加载AI伙伴数据
+  const loadPartner = async (session: Session) => {
     try {
-      const res = await fetch(`${API_BASE}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          telegramUserId: parseInt(telegramId), 
-          telegramUsername: 'web_user' 
-        })
+      const res = await fetch(`${API_BASE}/ai-partner`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
       })
       const data = await res.json()
       if (data.success) {
-        setUser(data.data.user)
-        setPartner(data.data.aiPartner)
-        localStorage.setItem('weareallworld_user', JSON.stringify(data.data.user))
-        // 添加欢迎消息
+        setPartner(data.data)
+      }
+    } catch (err) {
+      console.error('Load partner failed:', err)
+    }
+  }
+
+  // 注册
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAuthLoading(true)
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      })
+      if (error) throw error
+      if (data.user) {
+        // 在数据库中创建用户记录
+        await createUserRecord(data.user.id, email)
         setChatHistory([{
           role: 'assistant',
-          content: '你好呀！我是你的AI伙伴小零～ 很高兴认识你！✨',
+          content: '欢迎来到天下一家！我是你的AI伙伴小零～ 很高兴认识你！✨',
           timestamp: new Date()
         }])
       }
+    } catch (err: any) {
+      alert(err.message || '注册失败')
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  // 登录
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAuthLoading(true)
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (error) throw error
+    } catch (err: any) {
+      alert(err.message || '登录失败')
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  // 登出
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    setUser(null)
+    setSession(null)
+    setPartner(null)
+    setChatHistory([])
+  }
+
+  // 创建用户记录
+  const createUserRecord = async (userId: string, email: string) => {
+    try {
+      await fetch(`${API_BASE}/auth/create-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          userId, 
+          telegramUsername: email.split('@')[0] 
+        })
+      })
     } catch (err) {
-      console.error('Login failed:', err)
+      console.error('Create user record failed:', err)
     }
   }
 
   // 发送消息
   const handleSend = async () => {
-    if (!message.trim() || !user) return
+    if (!message.trim() || !session) return
     
-    // 添加用户消息到历史
     const userMsg: ChatMessage = {
       role: 'user',
       content: message,
@@ -111,14 +177,14 @@ function App() {
     try {
       const res = await fetch(`${API_BASE}/dialogue`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({ message: currentMessage })
       })
       const data = await res.json()
       if (data.success) {
-        setLastResult(data.data.qualityResult)
-        
-        // 添加AI回复到历史
         const aiMsg: ChatMessage = {
           role: 'assistant',
           content: data.data.aiReply,
@@ -127,13 +193,10 @@ function App() {
           points: data.data.qualityResult.points
         }
         setChatHistory(prev => [...prev, aiMsg])
-        
-        // 刷新伙伴数据
-        await refreshPartner()
+        await loadPartner(session)
       }
     } catch (err) {
       console.error('Send failed:', err)
-      // 添加错误消息
       setChatHistory(prev => [...prev, {
         role: 'assistant',
         content: '抱歉，我好像有点累了，请稍后再试试～',
@@ -144,24 +207,16 @@ function App() {
     }
   }
 
-  // 刷新伙伴数据
-  const refreshPartner = async () => {
-    if (!user) return
-    try {
-      const res = await fetch(`${API_BASE}/ai-partner`)
-      const data = await res.json()
-      if (data.success) {
-        setPartner(data.data)
-      }
-    } catch (err) {
-      console.error('Refresh failed:', err)
-    }
-  }
-
   // 签到
   const handleCheckin = async () => {
+    if (!session) return
     try {
-      const res = await fetch(`${API_BASE}/ai-partner/checkin`, { method: 'POST' })
+      const res = await fetch(`${API_BASE}/ai-partner/checkin`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
       const data = await res.json()
       if (data.success) {
         setChatHistory(prev => [...prev, {
@@ -169,13 +224,9 @@ function App() {
           content: '签到成功！今天也要元气满满哦～ 🎉',
           timestamp: new Date()
         }])
-        await refreshPartner()
+        await loadPartner(session)
       } else {
-        setChatHistory(prev => [...prev, {
-          role: 'assistant',
-          content: data.data?.message || '签到失败，请稍后再试',
-          timestamp: new Date()
-        }])
+        alert(data.data?.message || '签到失败')
       }
     } catch (err) {
       console.error('Checkin failed:', err)
@@ -190,41 +241,79 @@ function App() {
     return { name: '懵懂期', emoji: '🌱', color: 'text-yellow-600' }
   }
 
-  // 未登录状态
+  // 未登录状态 - 显示登录/注册表单
   if (!user) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
-        <div className="card max-w-md w-full text-center">
-          <div className="text-6xl mb-4">🌍</div>
-          <h1 className="text-3xl font-bold mb-2">天下一家</h1>
-          <p className="text-gray-500 mb-8">WeAreAll.World</p>
+        <div className="card max-w-md w-full">
+          <div className="text-center mb-6">
+            <div className="text-6xl mb-4">🌍</div>
+            <h1 className="text-3xl font-bold mb-2">天下一家</h1>
+            <p className="text-gray-500">WeAreAll.World</p>
+          </div>
           
-          <p className="text-gray-600 mb-6">
-            与AI伙伴建立真正的情感连接，<br/>
-            共同成长，见证奇迹
-          </p>
-          
-          <div className="space-y-4">
-            <input
-              type="text"
-              placeholder="输入 Telegram ID 开始"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleLogin((e.target as HTMLInputElement).value)
-                }
-              }}
-            />
-            <button 
-              className="btn-primary w-full"
-              onClick={() => {
-                const input = document.querySelector('input') as HTMLInputElement
-                if (input?.value) handleLogin(input.value)
-              }}
+          {/* 切换登录/注册 */}
+          <div className="flex mb-6 bg-gray-100 rounded-xl p-1">
+            <button
+              onClick={() => setAuthMode('register')}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+                authMode === 'register' 
+                  ? 'bg-white shadow text-primary-600' 
+                  : 'text-gray-500'
+              }`}
             >
-              开始旅程
+              注册
+            </button>
+            <button
+              onClick={() => setAuthMode('login')}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+                authMode === 'login' 
+                  ? 'bg-white shadow text-primary-600' 
+                  : 'text-gray-500'
+              }`}
+            >
+              登录
             </button>
           </div>
+          
+          <form onSubmit={authMode === 'register' ? handleRegister : handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">密码</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="至少6位"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                minLength={6}
+                required
+              />
+            </div>
+            <button 
+              type="submit"
+              disabled={authLoading}
+              className="btn-primary w-full disabled:opacity-50"
+            >
+              {authLoading ? '处理中...' : (authMode === 'register' ? '开始旅程' : '登录')}
+            </button>
+          </form>
+          
+          <p className="text-center text-gray-500 text-sm mt-6">
+            {authMode === 'register' 
+              ? '注册即表示同意开始与AI伙伴的共生之旅' 
+              : '还没有账号？点击上方注册'}
+          </p>
         </div>
       </div>
     )
@@ -245,6 +334,12 @@ function App() {
               className="bg-white/20 px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition"
             >
               签到
+            </button>
+            <button 
+              onClick={handleLogout}
+              className="bg-white/10 px-3 py-1 rounded-lg text-sm hover:bg-white/20 transition"
+            >
+              退出
             </button>
           </div>
         </div>
@@ -305,7 +400,6 @@ function App() {
         {/* 对话界面 */}
         {activeTab === 'chat' && (
           <div className="card">
-            {/* 聊天历史 */}
             <div className="h-[300px] overflow-y-auto mb-4 p-4 bg-gray-50 rounded-xl space-y-4">
               {chatHistory.map((msg, i) => (
                 <div 
@@ -317,7 +411,7 @@ function App() {
                       ? 'bg-primary-500 text-white rounded-2xl rounded-br-md' 
                       : 'bg-white shadow rounded-2xl rounded-bl-md'
                   } px-4 py-2`}>
-                    <p className="text-sm">{msg.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                     {msg.points !== undefined && msg.points > 0 && (
                       <p className="text-xs mt-1 opacity-70">+{msg.points}点</p>
                     )}
@@ -334,7 +428,6 @@ function App() {
               <div ref={chatEndRef} />
             </div>
             
-            {/* 输入框 */}
             <div className="flex gap-2">
               <input
                 type="text"
