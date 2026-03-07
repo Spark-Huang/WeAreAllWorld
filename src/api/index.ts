@@ -16,6 +16,9 @@ import { botKeyRouter } from './routes/bot-key.routes';
 import { adminRouter } from './routes/admin.routes';
 import { storyRouter } from './routes/story.routes';
 
+// 服务
+import { asyncQualityEvaluationService } from '../contribution-evaluation/services/async-quality-evaluation.service';
+
 // 中间件
 import { authMiddleware } from './middleware/auth.middleware';
 
@@ -69,7 +72,8 @@ app.get('/', (_req: Request, res: Response) => {
       },
       dialogue: {
         send: 'POST /api/v1/dialogue',
-        history: 'GET /api/v1/dialogue/history'
+        history: 'GET /api/v1/dialogue/history',
+        sessions: 'GET /api/v1/dialogue/sessions'
       },
       stats: {
         weekly: 'GET /api/v1/stats/weekly',
@@ -81,6 +85,11 @@ app.get('/', (_req: Request, res: Response) => {
         delete: 'DELETE /api/v1/bot-key',
         validate: 'POST /api/v1/bot-key/validate',
         test: 'POST /api/v1/bot-key/test'
+      },
+      story: {
+        current: 'GET /api/v1/story',
+        chapters: 'GET /api/v1/story/chapters',
+        advance: 'POST /api/v1/story/advance'
       }
     },
     documentation: 'https://github.com/Spark-Huang/WeAreAllWorld'
@@ -117,5 +126,12 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     message: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
+
+// 启动异步质量评估服务
+export function startAsyncEvaluationService(): void {
+  console.log('');
+  console.log('🔄 启动异步质量评估服务...');
+  asyncQualityEvaluationService.start();
+}
 
 export { app };

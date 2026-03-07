@@ -1,10 +1,15 @@
 /**
  * 对话路由
+ * 
+ * 设计：
+ * 1. 对话时快速响应，只记录消息和快速判定
+ * 2. 每15分钟批量 LLM 评估，补偿贡献值差异
  */
 
 import { Router, Request, Response } from 'express';
 import { createClient } from '@supabase/supabase-js';
-import { MemoryPointsService } from '../../contribution-evaluation/services/memory-points.service';
+import { qualityJudgeService } from '../../contribution-evaluation/services/quality-judge.service';
+import { asyncQualityEvaluationService } from '../../contribution-evaluation/services/async-quality-evaluation.service';
 import { LLMService } from '../../services/llm.service';
 
 const router: Router = Router();
@@ -13,6 +18,12 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_KE
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const llmService = new LLMService();
+
+// 会话超时时间（毫秒）- 5分钟无消息视为会话结束
+const SESSION_TIMEOUT = 5 * 60 * 1000;
+
+// 用户会话缓存
+const userSessions = new Map<string, { sessionId: string; lastActivity: number }>();
 
 /**
  * POST /api/v1/dialogue
@@ -51,15 +62,16 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
     
-    // 2. 处理对话，计算贡献值
-    const memoryService = new MemoryPointsService(SUPABASE_URL, SUPABASE_KEY);
-    const result = await memoryService.processDialogue(userId, message);
+    // 2. 快速质量判定（关键词匹配）
+    const quickResult = qualityJudgeService.calculateQuality(message);
     
-    // 3. 获取成长阶段
-    const growthStage = getGrowthStage(partner.total_contribution);
+    // 3. 获取或创建会话
+    const sessionId = await getOrCreateSession(userId);
     
     // 4. 生成AI回复
+    const growthStage = getGrowthStage(partner.total_contribution);
     let aiReply = '';
+    
     try {
       aiReply = await llmService.generatePartnerReply({
         userName: userData?.telegram_username || '用户',
@@ -72,32 +84,47 @@ router.post('/', async (req: Request, res: Response) => {
       });
     } catch (llmError) {
       console.error('LLM error:', llmError);
-      // 降级回复
-      aiReply = getFallbackReply(result.qualityResult.qualityType);
+      aiReply = getFallbackReply(quickResult.qualityType);
     }
     
-    // 5. 保存对话记录
+    // 5. 保存对话记录（包含原始消息，等待异步评估）
     await supabase
       .from('interaction_logs')
       .insert({
         user_id: userId,
-        category: result.qualityResult.qualityType,
-        granted_power: result.qualityResult.points,
-        data_rarity: result.qualityResult.dataRarity,
+        session_id: sessionId,
+        category: quickResult.qualityType,
+        granted_power: quickResult.points,
+        data_rarity: quickResult.dataRarity,
+        raw_message: message,
+        raw_reply: aiReply,
+        quick_quality_type: quickResult.qualityType,
+        quick_points: quickResult.points,
+        llm_evaluated: false,
         ai_understanding: {
           userMessage: message,
           aiReply,
-          emotion: result.qualityResult.emotionDetected,
-          keyInfo: result.qualityResult.keyInfo
+          emotion: quickResult.emotionDetected,
+          keyInfo: quickResult.keyInfo
         }
       });
+    
+    // 6. 快速更新贡献值（使用快速判定结果）
+    await supabase.rpc('update_contribution', {
+      p_user_id: userId,
+      p_points: quickResult.points,
+      p_category: quickResult.qualityType,
+      p_data_rarity: quickResult.dataRarity,
+      p_ai_understanding: { quick: true },
+      p_message_hash: null
+    });
     
     res.json({
       success: true,
       data: {
-        qualityResult: result.qualityResult,
-        updateResult: result.updateResult,
-        aiReply
+        qualityResult: quickResult,
+        aiReply,
+        sessionId
       }
     });
   } catch (err) {
@@ -105,6 +132,38 @@ router.post('/', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to process dialogue' });
   }
 });
+
+/**
+ * 获取或创建用户会话
+ */
+async function getOrCreateSession(userId: string): Promise<string> {
+  const now = Date.now();
+  const cached = userSessions.get(userId);
+  
+  // 检查是否有活跃会话
+  if (cached && (now - cached.lastActivity) < SESSION_TIMEOUT) {
+    // 更新最后活动时间
+    cached.lastActivity = now;
+    userSessions.set(userId, cached);
+    return cached.sessionId;
+  }
+  
+  // 如果有超时的会话，先结束它
+  if (cached) {
+    try {
+      await asyncQualityEvaluationService.endSession(cached.sessionId);
+    } catch (err) {
+      console.error('结束旧会话失败:', err);
+    }
+  }
+  
+  // 创建新会话
+  const sessionId = await asyncQualityEvaluationService.createSession(userId);
+  userSessions.set(userId, { sessionId, lastActivity: now });
+  
+  console.log(`用户 ${userId} 创建新会话: ${sessionId}`);
+  return sessionId;
+}
 
 /**
  * GET /api/v1/dialogue/history
@@ -122,7 +181,7 @@ router.get('/history', async (req: Request, res: Response) => {
     
     const { data: logs, error } = await supabase
       .from('interaction_logs')
-      .select('id, category, granted_power, data_rarity, ai_understanding, created_at')
+      .select('id, category, granted_power, data_rarity, ai_understanding, created_at, llm_evaluated, llm_quality_type, llm_points')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -135,7 +194,10 @@ router.get('/history', async (req: Request, res: Response) => {
     const history = (logs || []).map(log => ({
       id: log.id,
       category: log.category,
-      points: log.granted_power,
+      quickPoints: log.granted_power,
+      llmEvaluated: log.llm_evaluated,
+      llmQualityType: log.llm_quality_type,
+      llmPoints: log.llm_points,
       rarity: log.data_rarity,
       understanding: log.ai_understanding,
       timestamp: log.created_at
@@ -148,6 +210,41 @@ router.get('/history', async (req: Request, res: Response) => {
   } catch (err) {
     console.error('Get dialogue history error:', err);
     res.status(500).json({ error: 'Failed to get dialogue history' });
+  }
+});
+
+/**
+ * GET /api/v1/dialogue/sessions
+ * 获取用户的会话列表
+ */
+router.get('/sessions', async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const limit = parseInt(req.query.limit as string) || 20;
+    
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    
+    const { data: sessions, error } = await supabase
+      .from('dialogue_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('started_at', { ascending: false })
+      .limit(limit);
+    
+    if (error) {
+      throw error;
+    }
+    
+    res.json({
+      success: true,
+      data: sessions
+    });
+  } catch (err) {
+    console.error('Get sessions error:', err);
+    res.status(500).json({ error: 'Failed to get sessions' });
   }
 });
 

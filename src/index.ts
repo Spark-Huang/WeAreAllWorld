@@ -5,8 +5,9 @@
 import 'dotenv/config';
 import { TelegramBotService } from './services/telegram-bot.service';
 import { ScheduledTaskService } from './contribution-evaluation/services/scheduled-task.service';
+import { asyncQualityEvaluationService } from './contribution-evaluation/services/async-quality-evaluation.service';
 import { createClient } from '@supabase/supabase-js';
-import { app } from './api';
+import { app, startAsyncEvaluationService } from './api';
 
 // 环境变量
 const SUPABASE_URL = process.env.SUPABASE_URL!;
@@ -44,6 +45,9 @@ class Application {
       this.sendNotification.bind(this)
     );
     
+    // 启动异步质量评估服务
+    startAsyncEvaluationService();
+    
     // 如果配置了Telegram Bot Token，启动Bot
     if (TELEGRAM_BOT_TOKEN) {
       console.log('启动Telegram Bot...');
@@ -66,7 +70,8 @@ class Application {
     console.log('   - REST API: http://localhost:' + API_PORT);
     console.log('   - Supabase: 已连接');
     console.log('   - Telegram Bot: ' + (TELEGRAM_BOT_TOKEN ? '已启动' : '未配置'));
-    console.log('   - 定时任务: 已启动\n');
+    console.log('   - 定时任务: 已启动');
+    console.log('   - 异步质量评估: 已启动（每15分钟）\n');
   }
   
   /**
@@ -145,10 +150,12 @@ appInstance.start().catch(err => {
 // 优雅关闭
 process.on('SIGINT', () => {
   console.log('\n正在关闭...');
+  asyncQualityEvaluationService.stop();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.log('\n正在关闭...');
+  asyncQualityEvaluationService.stop();
   process.exit(0);
 });
