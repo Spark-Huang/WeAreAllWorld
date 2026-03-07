@@ -98,11 +98,20 @@ function App() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            telegram_username: email.split('@')[0]
+          }
+        }
       })
       if (error) throw error
-      if (data.user) {
-        // 在数据库中创建用户记录
-        await createUserRecord(data.user.id, email)
+      
+      // 检查是否需要邮箱验证
+      if (data.user && !data.session) {
+        alert('注册成功！请查收邮箱验证邮件，验证后即可登录。')
+        setAuthMode('login')
+      } else if (data.session) {
+        // 直接登录成功（如果 Supabase 配置为不需要邮箱验证）
         setChatHistory([{
           role: 'assistant',
           content: '欢迎来到天下一家！我是你的AI伙伴小零～ 很高兴认识你！✨',
@@ -140,22 +149,6 @@ function App() {
     setSession(null)
     setPartner(null)
     setChatHistory([])
-  }
-
-  // 创建用户记录
-  const createUserRecord = async (userId: string, email: string) => {
-    try {
-      await fetch(`${API_BASE}/auth/create-user`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          userId, 
-          telegramUsername: email.split('@')[0] 
-        })
-      })
-    } catch (err) {
-      console.error('Create user record failed:', err)
-    }
   }
 
   // 发送消息
