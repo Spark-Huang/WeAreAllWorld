@@ -12,6 +12,7 @@ import { userRouter } from './routes/user.routes';
 import { aiPartnerRouter } from './routes/ai-partner.routes';
 import { dialogueRouter } from './routes/dialogue.routes';
 import { statsRouter } from './routes/stats.routes';
+import { botKeyRouter } from './routes/bot-key.routes';
 
 // 中间件
 import { authMiddleware } from './middleware/auth.middleware';
@@ -53,7 +54,8 @@ app.get('/', (_req: Request, res: Response) => {
       health: '/health',
       api: '/api/v1',
       auth: {
-        register: 'POST /api/v1/auth/register'
+        register: 'POST /api/v1/auth/register',
+        createUser: 'POST /api/v1/auth/create-user'
       },
       user: {
         profile: 'GET /api/v1/user/profile'
@@ -70,6 +72,13 @@ app.get('/', (_req: Request, res: Response) => {
       stats: {
         weekly: 'GET /api/v1/stats/weekly',
         overview: 'GET /api/v1/stats/overview'
+      },
+      botKey: {
+        create: 'POST /api/v1/bot-key',
+        get: 'GET /api/v1/bot-key',
+        delete: 'DELETE /api/v1/bot-key',
+        validate: 'POST /api/v1/bot-key/validate',
+        test: 'POST /api/v1/bot-key/test'
       }
     },
     documentation: 'https://github.com/Spark-Huang/WeAreAllWorld'
@@ -87,6 +96,7 @@ app.use(`${API_PREFIX}/user`, authMiddleware, userRouter);
 app.use(`${API_PREFIX}/ai-partner`, authMiddleware, aiPartnerRouter);
 app.use(`${API_PREFIX}/dialogue`, authMiddleware, dialogueRouter);
 app.use(`${API_PREFIX}/stats`, authMiddleware, statsRouter);
+app.use(`${API_PREFIX}/bot-key`, authMiddleware, botKeyRouter);
 
 // 404 处理
 app.use((_req: Request, res: Response) => {
