@@ -81,12 +81,15 @@ router.post('/', async (req: Request, res: Response) => {
       .from('interaction_logs')
       .insert({
         user_id: userId,
-        interaction_type: 'dialogue',
-        content: message,
-        ai_response: aiReply,
-        points_earned: result.qualityResult.points,
-        quality_type: result.qualityResult.qualityType,
-        created_at: new Date().toISOString()
+        category: result.qualityResult.qualityType,
+        granted_power: result.qualityResult.points,
+        data_rarity: result.qualityResult.dataRarity,
+        ai_understanding: {
+          userMessage: message,
+          aiReply,
+          emotion: result.qualityResult.emotionDetected,
+          keyInfo: result.qualityResult.keyInfo
+        }
       });
     
     res.json({
@@ -119,9 +122,8 @@ router.get('/history', async (req: Request, res: Response) => {
     
     const { data: logs, error } = await supabase
       .from('interaction_logs')
-      .select('*')
+      .select('id, category, granted_power, data_rarity, ai_understanding, created_at')
       .eq('user_id', userId)
-      .eq('interaction_type', 'dialogue')
       .order('created_at', { ascending: false })
       .limit(limit);
     
@@ -129,9 +131,19 @@ router.get('/history', async (req: Request, res: Response) => {
       throw error;
     }
     
+    // 转换为对话历史格式
+    const history = (logs || []).map(log => ({
+      id: log.id,
+      category: log.category,
+      points: log.granted_power,
+      rarity: log.data_rarity,
+      understanding: log.ai_understanding,
+      timestamp: log.created_at
+    }));
+    
     res.json({
       success: true,
-      data: logs || []
+      data: history
     });
   } catch (err) {
     console.error('Get dialogue history error:', err);
