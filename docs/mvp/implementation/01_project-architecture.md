@@ -201,9 +201,9 @@ interface UserContext {
 
 ## 相关文档
 
-- [02_数据库设计.md](./02_数据库设计.md) - Supabase核心表结构设计
-- [03_OpenClaw集成设计.md](./03_OpenClaw集成设计.md) - 子项目集成与上下文下发
-- [04_LLM集成设计.md](./04_LLM集成设计.md) - 异步评估大模型提示词设计
-- [05_Telegram_Bot实现.md](./05_Telegram_Bot实现.md) - Webhook处理与指令路由
-- [06_API与业务逻辑.md](./06_API与业务逻辑.md) - 核心引擎API与BullMQ异步任务
-- [07_开发任务与部署.md](./07_开发任务与部署.md) - 三周极速MVP交付任务流
+- [02_数据库设计](./02_database-design.md) - Supabase核心表结构设计
+- [03_OpenClaw集成设计](./03_openclaw-integration.md) - 子项目集成与上下文下发
+- [04_LLM集成设计](./04_llm-integration.md) - 异步评估大模型提示词设计
+- [05_Telegram_Bot实现](./05_telegram-bot.md) - Webhook处理与指令路由
+- [06_API与业务逻辑](./06_api-business-logic.md) - 核心引擎API与BullMQ异步任务
+- [07_开发任务与部署](./07_deployment.md) - 三周极速MVP交付任务流
