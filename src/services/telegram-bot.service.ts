@@ -213,7 +213,7 @@ export class TelegramBotService {
       message += `称号：${aiPartner.currentTitle}\n\n`;
       
       message += `📈 本周进度\n`;
-      message += `获得点数：${weeklyStats.weeklyPower} / ${weeklyStats.requiredPower} 点\n`;
+      message += `获得点数：${weeklyStats.weeklyContribution} / ${weeklyStats.requiredContribution} 点\n`;
       message += `进度：${Math.round(weeklyStats.progressPercent)}%\n`;
       message += `活跃等级：${this.getActivityLevelText(weeklyStats.activityLevel)}\n\n`;
       
@@ -407,7 +407,7 @@ export class TelegramBotService {
    */
   private async handleMessage(ctx: Context): Promise<void> {
     const telegramUserId = ctx.from?.id;
-    const message = ctx.message?.text;
+    const message = ctx.message && 'text' in ctx.message ? ctx.message.text : undefined;
     
     if (!telegramUserId || !message) return;
     

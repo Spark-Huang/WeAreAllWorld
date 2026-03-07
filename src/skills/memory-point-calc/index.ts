@@ -15,7 +15,7 @@ export {
   QualityJudgeService,
   QualityResult,
   QualityRule
-} from '../../services/quality-judge.service';
+} from '../../contribution-evaluation/services/quality-judge.service';
 
 // 导出贡献值服务
 export {
@@ -23,7 +23,7 @@ export {
   UpdatePointsResult,
   Milestone,
   AIPartnerInfo
-} from '../../services/memory-points.service';
+} from '../../contribution-evaluation/services/memory-points.service';
 
 // 导出中央评估服务
 export {
@@ -32,7 +32,7 @@ export {
   DecayResult,
   WakeupResult,
   WeeklyStats
-} from '../../services/central-evaluation.service';
+} from '../../contribution-evaluation/services/central-evaluation.service';
 
 /**
  * 快速计算贡献值
@@ -42,7 +42,7 @@ export function calculatePoints(message: string): {
   points: number;
   reason: string;
 } {
-  const { qualityJudgeService } = require('../../services/quality-judge.service');
+  const { qualityJudgeService } = require('../../contribution-evaluation/services/quality-judge.service');
   const result = qualityJudgeService.calculateQuality(message);
   
   return {

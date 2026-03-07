@@ -17,6 +17,3 @@ export { ScheduledTaskService } from './services/scheduled-task.service';
 
 // 类型导出
 export * from './types';
-
-// 数据库函数导出
-export { getDatabaseFunctions } from './database/functions';

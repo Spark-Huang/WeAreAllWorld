@@ -7,6 +7,9 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn src/index.ts",
+    "dev:api": "API_PORT=3000 ts-node-dev --respawn src/index.ts",
+    "dev:frontend": "cd frontend && pnpm dev",
+    "dev:all": "concurrently \"pnpm dev:api\" \"pnpm dev:frontend\"",
     "test": "jest",
     "test:unit": "ts-node scripts/unit-test.ts",
     "test:security": "ts-node scripts/security-test.ts",
@@ -15,22 +18,28 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
-    "telegraf": "^4.16.0",
+    "cors": "^2.8.6",
+    "dotenv": "^16.3.1",
+    "express": "^5.2.1",
+    "helmet": "^8.1.0",
     "node-cron": "^3.0.3",
-    "dotenv": "^16.3.1"
+    "telegraf": "^4.16.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^29.5.11",
     "@types/node": "^20.10.0",
     "@types/node-cron": "^3.0.11",
-    "typescript": "^5.3.0",
-    "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
+    "concurrently": "^8.2.2",
     "eslint": "^8.55.0",
     "jest": "^29.7.0",
-    "@types/jest": "^29.5.11",
-    "ts-jest": "^29.1.1"
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.0"
   },
   "engines": {
     "node": ">=18.0.0"

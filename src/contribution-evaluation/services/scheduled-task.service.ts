@@ -75,11 +75,11 @@ export class ScheduledTaskService {
         
         // 发送通知
         for (const evalResult of result.results) {
-          if (evalResult.success && evalResult.result !== 'pass') {
+          if (evalResult.success && !evalResult.passed) {
             await this.sendNotification({
               telegramUserId: await this.getTelegramUserId(evalResult.userId),
-              message: this.centralEvaluation['generateEvaluationMessage'](evalResult),
-              type: evalResult.result as 'warning' | 'dormant'
+              message: evalResult.message,
+              type: evalResult.actionTaken === 'hibernated' ? 'dormant' : 'warning'
             });
           }
         }
@@ -147,10 +147,10 @@ export class ScheduledTaskService {
           const stats = await this.centralEvaluation.getWeeklyStats(user.user_id);
           
           // 如果进度低于50%，发送提醒
-          if (stats.progressPercent < 50 && stats.daysRemaining <= 3) {
+          if (stats.progressPercent < 50) {
             await this.sendNotification({
               telegramUserId: await this.getTelegramUserId(user.user_id),
-              message: `⚠️ 本周贡献值进度仅${Math.round(stats.progressPercent)}%！距离评估还有${stats.daysRemaining}天，请多与AI互动！`,
+              message: `⚠️ 本周贡献值进度仅${Math.round(stats.progressPercent)}%！请多与AI互动！`,
               type: 'warning'
             });
           }

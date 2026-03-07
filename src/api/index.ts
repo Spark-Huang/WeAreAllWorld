@@ -1,0 +1,72 @@
+/**
+ * 天下一家 - REST API 入口
+ */
+
+import express, { Express, Request, Response, NextFunction, Router } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import { createClient } from '@supabase/supabase-js';
+
+// 路由
+import { userRouter } from './routes/user.routes';
+import { aiPartnerRouter } from './routes/ai-partner.routes';
+import { dialogueRouter } from './routes/dialogue.routes';
+import { statsRouter } from './routes/stats.routes';
+
+// 中间件
+import { authMiddleware } from './middleware/auth.middleware';
+
+const app: Express = express();
+
+// 环境变量
+const SUPABASE_URL = process.env.SUPABASE_URL!;
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY!;
+
+// Supabase 客户端
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// 基础中间件
+app.use(helmet());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || '*',
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// 健康检查
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+  });
+});
+
+// API 版本路由
+const API_PREFIX = '/api/v1';
+
+// 公开路由（无需认证）
+app.use(`${API_PREFIX}/auth`, userRouter);
+
+// 受保护路由（需要认证）
+app.use(`${API_PREFIX}/user`, authMiddleware, userRouter);
+app.use(`${API_PREFIX}/ai-partner`, authMiddleware, aiPartnerRouter);
+app.use(`${API_PREFIX}/dialogue`, authMiddleware, dialogueRouter);
+app.use(`${API_PREFIX}/stats`, authMiddleware, statsRouter);
+
+// 404 处理
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({ error: 'Not Found' });
+});
+
+// 错误处理
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('API Error:', err);
+  res.status(500).json({ 
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
+export { app };

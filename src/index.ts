@@ -6,11 +6,13 @@ import 'dotenv/config';
 import { TelegramBotService } from './services/telegram-bot.service';
 import { ScheduledTaskService } from './contribution-evaluation/services/scheduled-task.service';
 import { createClient } from '@supabase/supabase-js';
+import { app } from './api';
 
 // 环境变量
 const SUPABASE_URL = process.env.SUPABASE_URL!;
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY!;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
+const API_PORT = parseInt(process.env.API_PORT || '3000');
 
 /**
  * 应用主类
@@ -30,6 +32,9 @@ class Application {
     
     // 检查环境变量
     this.checkEnvironment();
+    
+    // 启动 REST API
+    this.startApiServer();
     
     // 初始化定时任务服务
     console.log('初始化定时任务服务...');
@@ -51,16 +56,28 @@ class Application {
       await this.botService.start();
     } else {
       console.log('⚠️  未配置TELEGRAM_BOT_TOKEN，跳过Bot启动');
-      console.log('   仅运行定时任务服务...\n');
-      
-      // 启动定时任务
-      this.taskService.startAllTasks();
+      console.log('   仅运行API服务...\n');
     }
     
+    // 启动定时任务
+    this.taskService.startAllTasks();
+    
     console.log('\n✅ 应用启动成功！');
+    console.log('   - REST API: http://localhost:' + API_PORT);
     console.log('   - Supabase: 已连接');
     console.log('   - Telegram Bot: ' + (TELEGRAM_BOT_TOKEN ? '已启动' : '未配置'));
     console.log('   - 定时任务: 已启动\n');
+  }
+  
+  /**
+   * 启动 REST API 服务器
+   */
+  private startApiServer(): void {
+    app.listen(API_PORT, () => {
+      console.log(`🚀 REST API 服务已启动: http://localhost:${API_PORT}`);
+      console.log(`   - 健康检查: http://localhost:${API_PORT}/health`);
+      console.log(`   - API 文档: http://localhost:${API_PORT}/api/v1`);
+    });
   }
   
   /**
@@ -119,8 +136,8 @@ class Application {
 }
 
 // 启动应用
-const app = new Application();
-app.start().catch(err => {
+const appInstance = new Application();
+appInstance.start().catch(err => {
   console.error('应用启动失败:', err);
   process.exit(1);
 });
