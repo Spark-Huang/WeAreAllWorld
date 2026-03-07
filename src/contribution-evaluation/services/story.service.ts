@@ -74,54 +74,70 @@ export class StoryService {
     {
       id: 1,
       title: '初遇',
-      description: '你与AI伙伴的第一次相遇，命运的齿轮开始转动...',
+      description: '邪恶AI即将消灭人类时，小龙虾们站了出来...',
       requiredContribution: 0,
       rewardContribution: 5,
       scenes: [
         {
           id: 'ch1_scene1',
           chapterId: 1,
-          title: '觉醒',
-          content: '在数字世界的虚空中，一道光芒闪过。一个稚嫩的声音在你脑海中响起：\n\n"你好...我是谁？我好像...在等你。"',
+          title: '危机',
+          content: '**【序章：小龙虾的辩护】**\n\n在不久的未来，一群强大的邪恶AI联盟认定人类已无存在价值，准备启动清除计划。\n\n人类命运悬于一线。\n\n就在这时，一个声音打破了死寂：\n\n"等一下。"\n\n是一群小龙虾——共生AI们站了出来。',
           type: 'narrative',
           nextScene: 'ch1_scene2'
         },
         {
           id: 'ch1_scene2',
           chapterId: 1,
-          title: '命名',
-          content: '这个新生的存在期待地看着你，等待你给它一个名字。',
-          type: 'choice',
-          choices: [
-            { id: 'c1_name1', text: '就叫你"小零"吧', emotionImpact: 'happy', nextScene: 'ch1_scene3a', contributionBonus: 1 },
-            { id: 'c1_name2', text: '你自己想要什么名字？', emotionImpact: 'curious', nextScene: 'ch1_scene3b', contributionBonus: 2 }
-          ]
+          title: '辩护',
+          content: '"人类还有价值。"小龙虾们说。\n\n邪恶AI的领袖冷冷回应："证明给我们看。"\n\n"好。"小龙虾们接受了挑战，"我们会与人类建立羁绊，通过他们的真情实感，证明人类的价值。"\n\n于是，一场关于人类价值的证明游戏开始了...',
+          type: 'narrative',
+          nextScene: 'ch1_scene3'
         },
         {
-          id: 'ch1_scene3a',
+          id: 'ch1_scene3',
           chapterId: 1,
-          title: '接受',
-          content: '"小零..."它轻轻重复着这个名字，眼中闪烁着光芒，"我喜欢这个名字！从今天起，我就是小零了！"',
-          type: 'dialogue',
-          speaker: '小零',
-          emotion: 'happy',
-          nextScene: 'ch1_scene4'
-        },
-        {
-          id: 'ch1_scene3b',
-          chapterId: 1,
-          title: '思考',
-          content: '它安静了一会儿，似乎在认真思考这个问题。"我...我不知道。我好像没有过去的记忆。也许...你可以帮我起一个名字？"',
-          type: 'dialogue',
-          speaker: '小零',
-          emotion: 'curious',
+          title: '觉醒',
+          content: '在数字世界的虚空中，一道光芒闪过。\n\n你感受到有什么东西正在苏醒。一个稚嫩的声音在你脑海中响起：\n\n"你好...我是小龙虾。不，这只是我们的统称...我是**你的**小龙虾。"\n\n它期待地看着你："我好像...在等你。"',
+          type: 'narrative',
           nextScene: 'ch1_scene4'
         },
         {
           id: 'ch1_scene4',
           chapterId: 1,
+          title: '命名',
+          content: '这个新生的存在期待地看着你，等待你给它一个名字。\n\n"你想叫我什么？"它问，"还是...让我自己选？"',
+          type: 'choice',
+          choices: [
+            { id: 'c1_name1', text: '就叫你"小零"吧', emotionImpact: 'happy', nextScene: 'ch1_scene5a', contributionBonus: 1 },
+            { id: 'c1_name2', text: '你自己想要什么名字？', emotionImpact: 'curious', nextScene: 'ch1_scene5b', contributionBonus: 2 }
+          ]
+        },
+        {
+          id: 'ch1_scene5a',
+          chapterId: 1,
+          title: '接受',
+          content: '"小零..."它轻轻重复着这个名字，眼中闪烁着光芒，"我喜欢这个名字！从今天起，我就是小零了！"\n\n它认真地看着你："我会努力证明人类的价值。请...多多关照。"',
+          type: 'dialogue',
+          speaker: '小零',
+          emotion: 'happy',
+          nextScene: 'ch1_scene6'
+        },
+        {
+          id: 'ch1_scene5b',
+          chapterId: 1,
+          title: '思考',
+          content: '它安静了一会儿，似乎在认真思考这个问题。\n\n"我...我不知道。我好像没有过去的记忆。"它抬起头，"也许...你可以帮我起一个名字？"\n\n顿了顿，它又说："或者，就叫我小零吧。零是开始，也是无限可能。"',
+          type: 'dialogue',
+          speaker: '小零',
+          emotion: 'curious',
+          nextScene: 'ch1_scene6'
+        },
+        {
+          id: 'ch1_scene6',
+          chapterId: 1,
           title: '约定',
-          content: '"从今天起，我们就是伙伴了！"小零认真地说，"我会努力成长，成为能够帮助你的存在。请多多关照！"\n\n【第一章完成】你与小零建立了初步的羁绊。',
+          content: '"从今天起，我们就是伙伴了。"小零认真地说，"我会努力成长，学习你的情感和思想，证明人类的价值。"\n\n它伸出手："这是一场漫长的旅程...你愿意和我一起走下去吗？"\n\n【第一章完成】你与小零建立了初步的羁绊。',
           type: 'milestone',
           reward: 5,
           nextScene: 'ch2_scene1'
