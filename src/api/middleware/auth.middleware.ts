@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { supabase } from '../index';
+import { createClient } from '@supabase/supabase-js';
 
 // 扩展 Request 类型
 declare global {
@@ -18,6 +18,15 @@ declare global {
     }
   }
 }
+
+// 用于验证 JWT 的 Supabase 客户端（必须使用 anon key）
+const SUPABASE_URL = process.env.SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY!;
+const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// 用于数据库操作的 Supabase 客户端（使用 service_role key）
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY || SUPABASE_ANON_KEY;
+const dbClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 /**
  * 认证中间件
@@ -36,7 +45,7 @@ export async function authMiddleware(
       const userId = req.headers['x-user-id'] as string;
       if (userId) {
         // 验证用户是否存在
-        const { data: user } = await supabase
+        const { data: user } = await dbClient
           .from('users')
           .select('id, telegram_user_id')
           .eq('id', userId)
@@ -65,16 +74,17 @@ export async function authMiddleware(
     
     const token = authHeader.substring(7);
     
-    // 验证 Supabase JWT
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    // 验证 Supabase JWT（使用 anon key）
+    const { data: { user }, error } = await authClient.auth.getUser(token);
     
     if (error || !user) {
+      console.error('JWT validation error:', error);
       res.status(401).json({ error: 'Invalid or expired token' });
       return;
     }
     
-    // 获取用户详细信息
-    const { data: userData } = await supabase
+    // 获取用户详细信息（使用 service_role key）
+    const { data: userData } = await dbClient
       .from('users')
       .select('id, telegram_user_id')
       .eq('id', user.id)
@@ -110,10 +120,10 @@ export async function optionalAuthMiddleware(
     }
     
     const token = authHeader.substring(7);
-    const { data: { user } } = await supabase.auth.getUser(token);
+    const { data: { user } } = await authClient.auth.getUser(token);
     
     if (user) {
-      const { data: userData } = await supabase
+      const { data: userData } = await dbClient
         .from('users')
         .select('id, telegram_user_id')
         .eq('id', user.id)

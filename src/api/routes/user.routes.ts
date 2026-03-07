@@ -41,6 +41,75 @@ router.post('/register', async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/v1/auth/ensure-user
+ * 确保用户记录存在（登录时调用）
+ * 这个路由需要认证
+ */
+router.post('/ensure-user', async (req: Request, res: Response) => {
+  try {
+    // 从 Authorization header 获取 token 并验证
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({ error: 'Missing authorization token' });
+      return;
+    }
+    
+    const token = authHeader.substring(7);
+    
+    // 使用 anon key 验证 JWT
+    const { createClient } = await import('@supabase/supabase-js');
+    const authClient = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_ANON_KEY!
+    );
+    
+    const { data: { user }, error: authError } = await authClient.auth.getUser(token);
+    
+    if (authError || !user) {
+      res.status(401).json({ error: 'Invalid or expired token' });
+      return;
+    }
+    
+    const userId = user.id;
+    const { telegramUsername } = req.body;
+    
+    // 检查用户是否已存在
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+    
+    if (existingUser) {
+      res.json({ success: true, isNewUser: false });
+      return;
+    }
+    
+    // 创建用户记录（触发器会自动创建AI伙伴）
+    const { error } = await supabase
+      .from('users')
+      .insert({
+        id: userId,
+        telegram_user_id: Math.floor(Math.random() * 1000000000),
+        telegram_username: telegramUsername || 'web_user',
+        onboarding_step: 0,
+        onboarding_completed: false
+      });
+    
+    if (error) {
+      console.error('Create user error:', error);
+      res.status(500).json({ error: 'Failed to create user' });
+      return;
+    }
+    
+    res.json({ success: true, isNewUser: true });
+  } catch (err) {
+    console.error('Ensure user error:', err);
+    res.status(500).json({ error: 'Failed to ensure user' });
+  }
+});
+
+/**
  * POST /api/v1/auth/create-user
  * 为 Supabase Auth 用户创建数据库记录
  */
@@ -61,6 +130,20 @@ router.post('/create-user', async (req: Request, res: Response) => {
       .single();
     
     if (existingUser) {
+      // 检查 AI 伙伴是否存在
+      const { data: existingPartner } = await supabase
+        .from('ai_partners')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+      
+      if (!existingPartner) {
+        // 手动创建 AI 伙伴
+        await supabase
+          .from('ai_partners')
+          .insert({ user_id: userId, name: '小零' });
+      }
+      
       res.json({ success: true, message: 'User already exists' });
       return;
     }
@@ -80,6 +163,20 @@ router.post('/create-user', async (req: Request, res: Response) => {
       console.error('Create user error:', error);
       res.status(500).json({ error: 'Failed to create user' });
       return;
+    }
+    
+    // 检查 AI 伙伴是否创建成功
+    const { data: partner } = await supabase
+      .from('ai_partners')
+      .select('id')
+      .eq('user_id', userId)
+      .single();
+    
+    if (!partner) {
+      // 手动创建 AI 伙伴
+      await supabase
+        .from('ai_partners')
+        .insert({ user_id: userId, name: '小零' });
     }
     
     res.json({ success: true, message: 'User created' });

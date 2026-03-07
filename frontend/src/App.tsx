@@ -52,6 +52,7 @@ function App() {
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
+        ensureUserExists(session)
         loadPartner(session)
       }
     })
@@ -61,12 +62,39 @@ function App() {
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
+        ensureUserExists(session)
         loadPartner(session)
       }
     })
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // 确保用户记录存在
+  const ensureUserExists = async (session: Session) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/ensure-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          telegramUsername: session.user.email?.split('@')[0] || 'web_user'
+        })
+      })
+      const data = await res.json()
+      if (data.isNewUser) {
+        setChatHistory([{
+          role: 'assistant',
+          content: '欢迎来到天下一家！我是你的AI伙伴小零～ 很高兴认识你！✨',
+          timestamp: new Date()
+        }])
+      }
+    } catch (err) {
+      console.error('Ensure user failed:', err)
+    }
+  }
 
   // 滚动到底部
   useEffect(() => {
@@ -111,12 +139,7 @@ function App() {
         alert('注册成功！请查收邮箱验证邮件，验证后即可登录。')
         setAuthMode('login')
       } else if (data.session) {
-        // 直接登录成功（如果 Supabase 配置为不需要邮箱验证）
-        setChatHistory([{
-          role: 'assistant',
-          content: '欢迎来到天下一家！我是你的AI伙伴小零～ 很高兴认识你！✨',
-          timestamp: new Date()
-        }])
+        // 直接登录成功（ensureUserExists 会在 useEffect 中自动调用）
       }
     } catch (err: any) {
       alert(err.message || '注册失败')
