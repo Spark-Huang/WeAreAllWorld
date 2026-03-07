@@ -1,0 +1,38 @@
+{
+  "apps": [
+    {
+      "name": "weareallworld-api",
+      "script": "dist/index.js",
+      "cwd": "/root/.openclaw/workspace/WeAreAllWorld",
+      "instances": 1,
+      "exec_mode": "fork",
+      "autorestart": true,
+      "watch": false,
+      "max_memory_restart": "500M",
+      "env": {
+        "NODE_ENV": "production",
+        "PORT": 3000
+      },
+      "error_file": "/root/.openclaw/workspace/WeAreAllWorld/logs/api-error.log",
+      "out_file": "/root/.openclaw/workspace/WeAreAllWorld/logs/api-out.log",
+      "log_date_format": "YYYY-MM-DD HH:mm:ss Z"
+    },
+    {
+      "name": "weareallworld-frontend",
+      "script": "node_modules/vite/bin/vite.js",
+      "args": "--host 0.0.0.0 --port 5173",
+      "cwd": "/root/.openclaw/workspace/WeAreAllWorld/frontend",
+      "instances": 1,
+      "exec_mode": "fork",
+      "autorestart": true,
+      "watch": false,
+      "max_memory_restart": "300M",
+      "env": {
+        "NODE_ENV": "production"
+      },
+      "error_file": "/root/.openclaw/workspace/WeAreAllWorld/logs/frontend-error.log",
+      "out_file": "/root/.openclaw/workspace/WeAreAllWorld/logs/frontend-out.log",
+      "log_date_format": "YYYY-MM-DD HH:mm:ss Z"
+    }
+  ]
+}
