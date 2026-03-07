@@ -195,7 +195,7 @@ COMMENT ON TABLE public.central_evaluations IS '中央评估审计流水表';
 COMMENT ON COLUMN public.central_evaluations.action_taken IS '执行动作：none, warned, hibernated, decayed, recycled';
 
 -- ============================================
--- 5. 剧情进度表 (story_progress)
+-- 5. 剧情进度表 (story_progress) - v2.2更新
 -- ============================================
 CREATE TABLE IF NOT EXISTS public.story_progress (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -203,16 +203,23 @@ CREATE TABLE IF NOT EXISTS public.story_progress (
   
   -- 当前进度
   current_chapter INTEGER DEFAULT 1,
-  current_scene VARCHAR(50),
+  current_scene VARCHAR(50) DEFAULT 'ch1_scene1',
+  
+  -- 已完成章节
+  completed_chapters JSONB DEFAULT '[]',
   
   -- 选择记录
   choices_made JSONB DEFAULT '[]',
   
+  -- 累计奖励
+  total_rewards INTEGER DEFAULT 0,
+  
   -- 状态
   status VARCHAR(20) DEFAULT 'available',
+  CHECK (status IN ('available', 'locked', 'completed')),
   
   -- 时间戳
-  started_at TIMESTAMPTZ,
+  started_at TIMESTAMPTZ DEFAULT NOW(),
   completed_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   
@@ -220,10 +227,13 @@ CREATE TABLE IF NOT EXISTS public.story_progress (
 );
 
 CREATE INDEX IF NOT EXISTS idx_story_progress_user_id ON public.story_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_story_progress_status ON public.story_progress(status);
 
 ALTER TABLE public.story_progress ENABLE ROW LEVEL SECURITY;
 
-COMMENT ON TABLE public.story_progress IS '剧情进度表';
+COMMENT ON TABLE public.story_progress IS '剧情进度表 v2.2';
+COMMENT ON COLUMN public.story_progress.completed_chapters IS '已完成的章节ID列表';
+COMMENT ON COLUMN public.story_progress.total_rewards IS '剧情累计获得的贡献值奖励';
 
 -- ============================================
 -- 6. 每日签到表 (daily_signin)
