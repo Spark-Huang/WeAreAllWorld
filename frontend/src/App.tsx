@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 
 // API 基础地址
@@ -32,6 +32,14 @@ interface QualityResult {
   dataRarity: string
 }
 
+interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: Date
+  qualityType?: string
+  points?: number
+}
+
 function App() {
   const [user, setUser] = useState<User | null>(null)
   const [partner, setPartner] = useState<AIPartner | null>(null)
@@ -39,6 +47,8 @@ function App() {
   const [lastResult, setLastResult] = useState<QualityResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'chat' | 'stats' | 'milestones'>('chat')
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
+  const chatEndRef = useRef<HTMLDivElement>(null)
 
   // 模拟登录（实际应使用 Supabase Auth）
   useEffect(() => {
@@ -48,6 +58,11 @@ function App() {
       setUser(JSON.parse(savedUser))
     }
   }, [])
+
+  // 滚动到底部
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatHistory])
 
   // 注册/登录
   const handleLogin = async (telegramId: string) => {
@@ -65,6 +80,12 @@ function App() {
         setUser(data.data.user)
         setPartner(data.data.aiPartner)
         localStorage.setItem('weareallworld_user', JSON.stringify(data.data.user))
+        // 添加欢迎消息
+        setChatHistory([{
+          role: 'assistant',
+          content: '你好呀！我是你的AI伙伴小零～ 很高兴认识你！✨',
+          timestamp: new Date()
+        }])
       }
     } catch (err) {
       console.error('Login failed:', err)
@@ -75,22 +96,49 @@ function App() {
   const handleSend = async () => {
     if (!message.trim() || !user) return
     
+    // 添加用户消息到历史
+    const userMsg: ChatMessage = {
+      role: 'user',
+      content: message,
+      timestamp: new Date()
+    }
+    setChatHistory(prev => [...prev, userMsg])
+    
     setLoading(true)
+    const currentMessage = message
+    setMessage('')
+    
     try {
       const res = await fetch(`${API_BASE}/dialogue`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ message: currentMessage })
       })
       const data = await res.json()
       if (data.success) {
         setLastResult(data.data.qualityResult)
-        setMessage('')
+        
+        // 添加AI回复到历史
+        const aiMsg: ChatMessage = {
+          role: 'assistant',
+          content: data.data.aiReply,
+          timestamp: new Date(),
+          qualityType: data.data.qualityResult.qualityType,
+          points: data.data.qualityResult.points
+        }
+        setChatHistory(prev => [...prev, aiMsg])
+        
         // 刷新伙伴数据
         await refreshPartner()
       }
     } catch (err) {
       console.error('Send failed:', err)
+      // 添加错误消息
+      setChatHistory(prev => [...prev, {
+        role: 'assistant',
+        content: '抱歉，我好像有点累了，请稍后再试试～',
+        timestamp: new Date()
+      }])
     } finally {
       setLoading(false)
     }
@@ -116,10 +164,18 @@ function App() {
       const res = await fetch(`${API_BASE}/ai-partner/checkin`, { method: 'POST' })
       const data = await res.json()
       if (data.success) {
-        alert('签到成功！')
+        setChatHistory(prev => [...prev, {
+          role: 'assistant',
+          content: '签到成功！今天也要元气满满哦～ 🎉',
+          timestamp: new Date()
+        }])
         await refreshPartner()
       } else {
-        alert(data.data?.message || '签到失败')
+        setChatHistory(prev => [...prev, {
+          role: 'assistant',
+          content: data.data?.message || '签到失败，请稍后再试',
+          timestamp: new Date()
+        }])
       }
     } catch (err) {
       console.error('Checkin failed:', err)
@@ -203,7 +259,7 @@ function App() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold">我的AI伙伴</h2>
+                <h2 className="text-lg font-bold">小零</h2>
                 <span className={`text-sm ${stage?.color}`}>
                   {stage?.name}
                 </span>
@@ -249,33 +305,42 @@ function App() {
         {/* 对话界面 */}
         {activeTab === 'chat' && (
           <div className="card">
-            <div className="min-h-[200px] mb-4 p-4 bg-gray-50 rounded-xl">
-              {lastResult ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">
-                      {lastResult.qualityType === 'special_memory' ? '🌟' :
-                       lastResult.qualityType === 'deep_thought' ? '💭' :
-                       lastResult.qualityType === 'experience' ? '📖' :
-                       lastResult.qualityType === 'emotion' ? '❤️' :
-                       lastResult.qualityType === 'daily' ? '💬' : '👋'}
-                    </span>
-                    <span className="font-medium">{lastResult.reason}</span>
-                    <span className="ml-auto text-primary-500 font-bold">+{lastResult.points}</span>
+            {/* 聊天历史 */}
+            <div className="h-[300px] overflow-y-auto mb-4 p-4 bg-gray-50 rounded-xl space-y-4">
+              {chatHistory.map((msg, i) => (
+                <div 
+                  key={i} 
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className={`max-w-[80%] ${
+                    msg.role === 'user' 
+                      ? 'bg-primary-500 text-white rounded-2xl rounded-br-md' 
+                      : 'bg-white shadow rounded-2xl rounded-bl-md'
+                  } px-4 py-2`}>
+                    <p className="text-sm">{msg.content}</p>
+                    {msg.points !== undefined && msg.points > 0 && (
+                      <p className="text-xs mt-1 opacity-70">+{msg.points}点</p>
+                    )}
                   </div>
-                  <p className="text-xs text-gray-400">{lastResult.dataRarity}</p>
                 </div>
-              ) : (
-                <p className="text-gray-400 text-center">开始和AI伙伴聊天吧~</p>
+              ))}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="bg-white shadow rounded-2xl rounded-bl-md px-4 py-2">
+                    <p className="text-sm text-gray-400">正在思考中...</p>
+                  </div>
+                </div>
               )}
+              <div ref={chatEndRef} />
             </div>
             
+            {/* 输入框 */}
             <div className="flex gap-2">
               <input
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                onKeyDown={(e) => e.key === 'Enter' && !loading && handleSend()}
                 placeholder="说点什么..."
                 className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
                 disabled={loading}
@@ -285,7 +350,7 @@ function App() {
                 disabled={loading || !message.trim()}
                 className="btn-primary disabled:opacity-50"
               >
-                {loading ? '...' : '发送'}
+                发送
               </button>
             </div>
           </div>
