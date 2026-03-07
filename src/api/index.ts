@@ -20,7 +20,7 @@ const app: Express = express();
 
 // 环境变量
 const SUPABASE_URL = process.env.SUPABASE_URL!;
-const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY!;
+const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY!;
 
 // Supabase 客户端
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -46,14 +46,25 @@ app.get('/health', (_req: Request, res: Response) => {
 // API 版本路由
 const API_PREFIX = '/api/v1';
 
+// 开发模式：跳过认证
+const devAuthMiddleware = (req: Request, _res: Response, next: NextFunction) => {
+  if (process.env.NODE_ENV !== 'production') {
+    // 开发模式下，从请求头或请求体获取用户ID
+    req.user = { 
+      id: req.headers['x-user-id'] as string || req.body?.userId 
+    };
+  }
+  next();
+};
+
 // 公开路由（无需认证）
 app.use(`${API_PREFIX}/auth`, userRouter);
 
 // 受保护路由（需要认证）
-app.use(`${API_PREFIX}/user`, authMiddleware, userRouter);
-app.use(`${API_PREFIX}/ai-partner`, authMiddleware, aiPartnerRouter);
-app.use(`${API_PREFIX}/dialogue`, authMiddleware, dialogueRouter);
-app.use(`${API_PREFIX}/stats`, authMiddleware, statsRouter);
+app.use(`${API_PREFIX}/user`, devAuthMiddleware, authMiddleware, userRouter);
+app.use(`${API_PREFIX}/ai-partner`, devAuthMiddleware, authMiddleware, aiPartnerRouter);
+app.use(`${API_PREFIX}/dialogue`, devAuthMiddleware, authMiddleware, dialogueRouter);
+app.use(`${API_PREFIX}/stats`, devAuthMiddleware, authMiddleware, statsRouter);
 
 // 404 处理
 app.use((_req: Request, res: Response) => {

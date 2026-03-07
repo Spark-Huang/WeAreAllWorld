@@ -28,6 +28,16 @@ export async function authMiddleware(
   next: NextFunction
 ): Promise<void> {
   try {
+    // 开发模式：支持通过 header 传递用户ID
+    if (process.env.NODE_ENV !== 'production') {
+      const devUserId = req.headers['x-user-id'] as string;
+      if (devUserId) {
+        req.user = { id: devUserId };
+        next();
+        return;
+      }
+    }
+    
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
