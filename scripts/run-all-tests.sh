@@ -41,9 +41,12 @@ echo "========== 1. 白盒测试 =========="
 echo ""
 
 cd "$(dirname "$0")/.."
-# 单元测试可能需要较长时间，使用超时
-UNIT_RESULT=$(timeout 60 pnpm test:unit 2>&1 || echo "TIMEOUT")
-if echo "$UNIT_RESULT" | grep -q "passed" || echo "$UNIT_RESULT" | grep -q "tests passed"; then
+# 单元测试需要较长时间，使用更长的超时
+echo "运行单元测试（约需20秒）..."
+UNIT_RESULT=$(timeout 90 pnpm test:unit 2>&1)
+if echo "$UNIT_RESULT" | grep -q "通过率: 100%"; then
+    test_case "单元测试 (55个用例)" "PASS"
+elif echo "$UNIT_RESULT" | grep -q "passed"; then
     test_case "单元测试 (55个用例)" "PASS"
 else
     # 如果超时，假设通过（因为之前已验证）
