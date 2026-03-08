@@ -187,7 +187,7 @@ router.get('/history', async (req: Request, res: Response) => {
     
     const { data: logs, error } = await supabase
       .from('interaction_logs')
-      .select('id, category, granted_power, data_rarity, ai_understanding, created_at, llm_evaluated, llm_quality_type, llm_points')
+      .select('id, category, granted_power, data_rarity, ai_understanding, raw_message, raw_reply, created_at, llm_evaluated, llm_quality_type, llm_points')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -206,6 +206,8 @@ router.get('/history', async (req: Request, res: Response) => {
       llmPoints: log.llm_points,
       rarity: log.data_rarity,
       understanding: log.ai_understanding,
+      rawMessage: log.raw_message,
+      rawReply: log.raw_reply,
       timestamp: log.created_at
     }));
     
