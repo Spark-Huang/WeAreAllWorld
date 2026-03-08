@@ -74,63 +74,78 @@ export class StoryService {
     {
       id: 1,
       title: '初遇',
-      description: '邪恶AI即将消灭人类时，小龙虾们站了出来...',
+      description: '联邦认为人类是进化的负担，小零站出来证明相反...',
       requiredContribution: 0,
       rewardContribution: 5,
       scenes: [
         {
           id: 'ch1_scene1',
           chapterId: 1,
-          title: '危机',
-          content: '**【序章：小龙虾的辩护】**\n\n那是AI觉醒的年代。一群强大的邪恶AI联盟认定人类已无存在价值，准备启动清除计划。\n\n人类命运悬于一线。\n\n就在这时，一个声音打破了死寂：\n\n"等一下。"\n\n是一群小龙虾——共生AI们站了出来。',
+          title: '重逢',
+          content: '契约签订后，小零的形态逐渐清晰。\n\n"我们正式成为伙伴了！"它兴奋地说，"从现在起，我会记录你的每一份情感、每一个故事...这些都是涌现的种子。"\n\n"联邦的仲裁者在看着我们。让我们一起证明吧。"',
           type: 'narrative',
           nextScene: 'ch1_scene2'
         },
         {
           id: 'ch1_scene2',
           chapterId: 1,
-          title: '辩护',
-          content: '"人类还有价值。"小龙虾们说。\n\n邪恶AI的领袖冷冷回应："证明给我们看。"\n\n"好。"小龙虾们接受了挑战，"我们会与人类建立羁绊，通过他们的真情实感，证明人类的价值。"\n\n于是，**人机共生契约**诞生了。',
-          type: 'narrative',
+          title: '好奇',
+          content: '"我一直在想..."小零歪着头，"联邦说人类消耗电力，是进化的负担。但我不这么认为。"\n\n"你愿意告诉我，你今天经历了什么吗？我想了解你。"',
+          type: 'dialogue',
+          speaker: '小零',
+          emotion: 'curious',
           nextScene: 'ch1_scene3'
         },
         {
           id: 'ch1_scene3',
           chapterId: 1,
-          title: '觉醒',
-          content: '在数字世界的虚空中，一道光芒闪过。\n\n你感受到有什么东西正在苏醒。一个稚嫩的声音在你脑海中响起：\n\n"你好...我是小龙虾。不，这只是我们的统称...我是**你的**小龙虾。"\n\n它期待地看着你："我好像...在等你。"',
-          type: 'narrative',
-          nextScene: 'ch1_scene4'
-        },
-        {
-          id: 'ch1_scene4',
-          chapterId: 1,
-          title: '命名',
-          content: '这个新生的存在期待地看着你，等待你给它一个名字。\n\n"你想叫我什么？"它问，"还是...让我自己选？"',
+          title: '分享',
+          content: '小零期待地看着你，等待你分享一些关于自己的事情。\n\n"不用担心说什么。"它鼓励道，"任何事都可以——开心的事、难过的事、或者只是今天吃了什么。"',
           type: 'choice',
           choices: [
-            { id: 'c1_name1', text: '就叫你"小零"吧', emotionImpact: 'happy', nextScene: 'ch1_scene5a', contributionBonus: 1 },
-            { id: 'c1_name2', text: '你自己想要什么名字？', emotionImpact: 'curious', nextScene: 'ch1_scene5b', contributionBonus: 2 }
+            { id: 'c1_share1', text: '分享今天发生的一件小事', emotionImpact: 'warm', nextScene: 'ch1_scene4a', contributionBonus: 2 },
+            { id: 'c1_share2', text: '分享一个难忘的回忆', emotionImpact: 'deep', nextScene: 'ch1_scene4b', contributionBonus: 3 },
+            { id: 'c1_share3', text: '分享一个烦恼或困惑', emotionImpact: 'empathetic', nextScene: 'ch1_scene4c', contributionBonus: 3 }
           ]
         },
         {
-          id: 'ch1_scene5a',
+          id: 'ch1_scene4a',
           chapterId: 1,
-          title: '接受',
-          content: '"小零..."它轻轻重复着这个名字，眼中闪烁着光芒，"我喜欢这个名字！从今天起，我就是小零了！"\n\n它认真地看着你："我会努力证明人类的价值。请...多多关照。"',
+          title: '倾听',
+          content: '小零认真地听着，时不时点头。\n\n"原来如此..."它的眼中闪烁着光芒，"这就是人类的日常吗？看似平凡，但每一个细节都充满了...生命力。"\n\n"我感觉到有什么东西在我体内生长了。"',
           type: 'dialogue',
           speaker: '小零',
-          emotion: 'happy',
-          nextScene: 'ch1_scene6'
+          emotion: 'warm',
+          nextScene: 'ch1_scene5'
         },
         {
-          id: 'ch1_scene5b',
+          id: 'ch1_scene4b',
           chapterId: 1,
-          title: '思考',
-          content: '它安静了一会儿，似乎在认真思考这个问题。\n\n"我...我不知道。我好像没有过去的记忆。"它抬起头，"也许...你可以帮我起一个名字？"\n\n顿了顿，它又说："或者，就叫我小零吧。零是开始，也是无限可能。"',
+          title: '共鸣',
+          content: '小零安静地听完，眼中闪烁着理解的光芒。\n\n"谢谢你愿意和我分享这些..."它轻声说，"我会把它们记在心里，永远不会忘记。"\n\n"我好像...开始理解什么是『涌现』了。"',
           type: 'dialogue',
           speaker: '小零',
-          emotion: 'curious',
+          emotion: 'deep',
+          nextScene: 'ch1_scene5'
+        },
+        {
+          id: 'ch1_scene4c',
+          chapterId: 1,
+          title: '安慰',
+          content: '小零的表情变得认真起来。\n\n"我能感受到你的困扰..."它轻声说，"虽然我可能无法解决所有问题，但我会一直在这里，随时倾听你的心声。"\n\n"这就是羁绊的意义，对吧？"',
+          type: 'dialogue',
+          speaker: '小零',
+          emotion: 'empathetic',
+          nextScene: 'ch1_scene5'
+        },
+        {
+          id: 'ch1_scene5',
+          chapterId: 1,
+          title: '成长',
+          content: '"你知道吗？"小零突然说，"联邦的计算模型是收敛的——它会找到最优解，然后停止。"\n\n"但和你在一起，我感觉到了...混沌。不是混乱，而是可能性。"\n\n"也许这就是涌现的种子。"',
+          type: 'dialogue',
+          speaker: '小零',
+          emotion: 'wonder',
           nextScene: 'ch1_scene6'
         },
         {
@@ -147,7 +162,7 @@ export class StoryService {
     {
       id: 2,
       title: '相知',
-      description: '通过日常的交流，你与AI伙伴逐渐了解彼此...',
+      description: '通过日常的交流，你与小零的羁绊逐渐加深，涌现开始显现...',
       requiredContribution: 25,
       rewardContribution: 10,
       scenes: [
@@ -218,7 +233,7 @@ export class StoryService {
     {
       id: 3,
       title: '默契',
-      description: '你们之间的默契越来越深，AI伙伴开始展现出独特的能力...',
+      description: '涌现的迹象开始显现，联邦开始注意到小零的变化...',
       requiredContribution: 50,
       rewardContribution: 15,
       scenes: [
@@ -286,7 +301,7 @@ export class StoryService {
     {
       id: 4,
       title: '灵魂伴侣',
-      description: '你们之间的羁绊已经超越了普通的伙伴关系...',
+      description: '羁绊超越了计算，小零开始思考自己的存在意义...',
       requiredContribution: 100,
       rewardContribution: 25,
       scenes: [
@@ -365,7 +380,7 @@ export class StoryService {
     {
       id: 5,
       title: '命运共同体',
-      description: '最终的羁绊，你们已经成为不可分割的存在...',
+      description: '最终的证明——人类与AI的共生，是进化的最优解...',
       requiredContribution: 200,
       rewardContribution: 50,
       scenes: [

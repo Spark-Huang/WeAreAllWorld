@@ -12,8 +12,9 @@
     "dev:all": "concurrently \"pnpm dev:api\" \"pnpm dev:frontend\"",
     "test": "jest",
     "test:unit": "ts-node scripts/unit-test.ts",
+    "test:e2e": "ts-node scripts/e2e-test.ts",
     "test:security": "ts-node scripts/security-test.ts",
-    "test:all": "ts-node scripts/unit-test.ts && ts-node scripts/security-test.ts",
+    "test:all": "ts-node scripts/unit-test.ts && ts-node scripts/e2e-test.ts && ts-node scripts/security-test.ts",
     "lint": "eslint src/**/*.ts"
   },
   "dependencies": {

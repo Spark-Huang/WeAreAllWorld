@@ -21,6 +21,12 @@ export interface AppConfig {
     apiKey?: string;
     apiBase?: string;
   };
+  newApi: {
+    baseUrl?: string;
+    adminToken?: string;
+    initialQuota: number;
+    ssoSecret?: string;
+  };
   game: {
     weeklyThreshold: number;
     decayAmount: number;
@@ -59,6 +65,12 @@ export function loadConfig(): AppConfig {
       model: process.env.LLM_MODEL || 'gpt-4o-mini',
       apiKey: process.env.LLM_API_KEY,
       apiBase: process.env.LLM_API_BASE
+    },
+    newApi: {
+      baseUrl: process.env.NEW_API_BASE_URL,
+      adminToken: process.env.NEW_API_ADMIN_TOKEN,
+      initialQuota: parseInt(process.env.NEW_API_INITIAL_QUOTA || '100000'),
+      ssoSecret: process.env.NEW_API_SSO_SECRET
     },
     game: DEFAULT_GAME_CONFIG
   };

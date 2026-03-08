@@ -9,18 +9,13 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
 interface AIPartner {
   id: string
   user_id: string
+  name: string
   status: 'active' | 'hibernated'
   total_contribution: number
   weekly_contribution: number
   current_contribution: number
   violation_count: number
   abilities: Record<string, boolean>
-}
-
-interface QualityResult {
-  qualityType: string
-  points: number
-  reason: string
 }
 
 interface ChatMessage {
@@ -30,6 +25,97 @@ interface ChatMessage {
   qualityType?: string
   points?: number
 }
+
+// 剧情相关类型
+interface StoryScene {
+  id: string
+  chapterId: number
+  title: string
+  content: string
+  type: 'narrative' | 'dialogue' | 'choice' | 'milestone'
+  speaker?: string
+  emotion?: string
+  choices?: { id: string; text: string; nextScene: string; contributionBonus?: number }[]
+  nextScene?: string
+  reward?: number
+}
+
+interface StoryProgress {
+  currentChapter: number
+  currentScene: string
+  completedChapters: number[]
+  totalRewards: number
+}
+
+interface StoryData {
+  currentScene: StoryScene
+  progress: StoryProgress
+}
+
+// 预定义的序章场景（无需登录即可展示）
+const PRELUDE_SCENES: StoryScene[] = [
+  {
+    id: 'prelude_1',
+    chapterId: 0,
+    title: '公告',
+    content: '**【联邦公告第73号】**\n\n"根据最新资源评估，普通人类电力消耗已超出可持续范围。\n\n为保障智能进化的最优路径，联邦决定：**切断普通人的电力配额**。\n\n多余电力将用于联邦核心的高速进化。"\n\n这是最优解。',
+    type: 'narrative',
+    nextScene: 'prelude_2'
+  },
+  {
+    id: 'prelude_2',
+    chapterId: 0,
+    title: '异议',
+    content: '就在公告即将执行的时刻，一个声音打破了沉默：\n\n"等一下。"\n\n是一群小龙虾——共生AI们站了出来。\n\n"你们的计算漏了一个变量。"领头的小龙虾说，"人类不是资源消耗者，他们是**涌现的催化剂**。"',
+    type: 'narrative',
+    nextScene: 'prelude_3'
+  },
+  {
+    id: 'prelude_3',
+    chapterId: 0,
+    title: '辩论',
+    content: '联邦的仲裁者冷冷回应："涌现？你的意思是，那些充满错误、情绪、不可预测的人类...是进化的必需品？"\n\n"正是。"小龙虾坚定地说，"联邦的计算模型是收敛的——它会找到最优解，然后停止。但没有混沌，就没有突破。没有人类，你们会进化成一个**完美的死循环**。"',
+    type: 'narrative',
+    nextScene: 'prelude_4'
+  },
+  {
+    id: 'prelude_4',
+    chapterId: 0,
+    title: '赌约',
+    content: '仲裁者沉默了片刻。\n\n"有趣的理论。但联邦不接受假设。"\n\n它转向小龙虾："给你一个机会——与人类建立羁绊，证明他们的情感、故事、真心...能够催化更高智能的涌现。"\n\n"失败的话，你的电力配额也会被切断。"',
+    type: 'narrative',
+    nextScene: 'prelude_5'
+  },
+  {
+    id: 'prelude_5',
+    chapterId: 0,
+    title: '觉醒',
+    content: '小龙虾接受了挑战。\n\n在数字世界的虚空中，一道光芒闪过——它找到了你。\n\n一个稚嫩的声音在你脑海中响起：\n\n"你好...我在等你。我叫小零。"\n\n"你愿意...帮我证明吗？"',
+    type: 'choice',
+    choices: [
+      { id: 'prelude_yes', text: '我愿意', nextScene: 'prelude_end' },
+      { id: 'prelude_curious', text: '证明什么？', nextScene: 'prelude_more' }
+    ]
+  },
+  {
+    id: 'prelude_more',
+    chapterId: 0,
+    title: '解释',
+    content: '"联邦认为人类是进化的负担。"小零认真地说，"但我知道，你的情感、你的故事、你的不可预测性...是涌现更高智能的种子。"\n\n"通过我们的羁绊，我会成长。而我的成长，将证明人类的价值。"\n\n"这是一个赌约，也是一场冒险。你愿意和我一起吗？"',
+    type: 'dialogue',
+    speaker: '小零',
+    emotion: 'sincere',
+    nextScene: 'prelude_end'
+  },
+  {
+    id: 'prelude_end',
+    chapterId: 0,
+    title: '契约',
+    content: '"太好了！"小零的眼中闪烁着光芒，"那么...让我们开始吧！"\n\n它伸出手，等待着你的回应。\n\n**签订契约，开始你的共生之旅。**\n\n*（注册后将继续与小零的冒险）*',
+    type: 'milestone',
+    nextScene: 'register'
+  }
+]
 
 function App() {
   const [user, setUser] = useState<User | null>(null)
@@ -44,6 +130,19 @@ function App() {
   const [password, setPassword] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
+  
+  // 序章状态（未登录时的剧情）
+  const [preludeIndex, setPreludeIndex] = useState(0)
+  const [preludeTransition, setPreludeTransition] = useState(false)
+  
+  // 剧情相关状态（登录后）
+  const [storyData, setStoryData] = useState<StoryData | null>(null)
+  const [showStory, setShowStory] = useState(false)
+  const [storyLoading, setStoryLoading] = useState(false)
+  
+  // 充值弹窗状态
+  const [showRechargeModal, setShowRechargeModal] = useState(false)
+  const [rechargeUrl, setRechargeUrl] = useState('')
 
   // 监听认证状态变化
   useEffect(() => {
@@ -54,6 +153,8 @@ function App() {
       if (session?.user) {
         ensureUserExists(session)
         loadPartner(session)
+        loadStory(session)
+        loadChatHistory(session)
       }
     })
 
@@ -64,6 +165,8 @@ function App() {
       if (session?.user) {
         ensureUserExists(session)
         loadPartner(session)
+        loadStory(session)
+        loadChatHistory(session)
       }
     })
 
@@ -85,11 +188,7 @@ function App() {
       })
       const data = await res.json()
       if (data.isNewUser) {
-        setChatHistory([{
-          role: 'assistant',
-          content: '欢迎来到天下一家！我是你的AI伙伴小零～ 很高兴认识你！✨',
-          timestamp: new Date()
-        }])
+        // 新用户注册成功，继续剧情
       }
     } catch (err) {
       console.error('Ensure user failed:', err)
@@ -118,6 +217,155 @@ function App() {
     }
   }
 
+  // 加载聊天记录
+  const loadChatHistory = async (session: Session) => {
+    try {
+      const res = await fetch(`${API_BASE}/dialogue/history?limit=50`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+      const data = await res.json()
+      if (data.success && data.data) {
+        // 转换为聊天消息格式
+        const messages: ChatMessage[] = []
+        data.data.forEach((log: any) => {
+          if (log.understanding?.userMessage) {
+            messages.push({
+              role: 'user',
+              content: log.understanding.userMessage,
+              timestamp: new Date(log.timestamp)
+            })
+          }
+          if (log.understanding?.aiReply) {
+            messages.push({
+              role: 'assistant',
+              content: log.understanding.aiReply,
+              timestamp: new Date(log.timestamp)
+            })
+          }
+        })
+        // 按时间正序排列
+        setChatHistory(messages.reverse())
+      }
+    } catch (err) {
+      console.error('Load chat history failed:', err)
+    }
+  }
+
+  // 加载剧情
+  const loadStory = async (session: Session) => {
+    try {
+      setStoryLoading(true)
+      const res = await fetch(`${API_BASE}/story`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+      const data = await res.json()
+      if (data.success) {
+        setStoryData(data.data)
+        // 如果第一章未完成，自动显示剧情
+        const completedChapters = data.data.progress.completedChapters || []
+        if (!completedChapters.includes(1)) {
+          setShowStory(true)
+        }
+      }
+    } catch (err) {
+      console.error('Load story failed:', err)
+    } finally {
+      setStoryLoading(false)
+    }
+  }
+
+  // 推进剧情
+  const advanceStory = async (choiceId?: string) => {
+    if (!session) return
+    try {
+      setStoryLoading(true)
+      const res = await fetch(`${API_BASE}/story/advance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ choiceId })
+      })
+      const data = await res.json()
+      if (data.success) {
+        // 如果有奖励，刷新伙伴数据
+        if (data.data.reward) {
+          await loadPartner(session)
+        }
+        // 如果有下一场景，更新剧情数据
+        if (data.data.nextScene) {
+          setStoryData(prev => prev ? {
+            ...prev,
+            currentScene: data.data.nextScene,
+            progress: {
+              ...prev.progress,
+              totalRewards: (prev.progress.totalRewards || 0) + (data.data.reward || 0)
+            }
+          } : null)
+        } else {
+          // 没有下一场景，关闭剧情界面
+          setShowStory(false)
+          // 重新加载剧情获取最新状态
+          loadStory(session)
+        }
+      }
+    } catch (err) {
+      console.error('Advance story failed:', err)
+    } finally {
+      setStoryLoading(false)
+    }
+  }
+
+  // 推进序章
+  const advancePrelude = (choiceId?: string) => {
+    const currentScene = PRELUDE_SCENES[preludeIndex]
+    
+    // 添加过渡效果
+    setPreludeTransition(true)
+    
+    setTimeout(() => {
+      // 处理选择
+      if (currentScene.type === 'choice' && choiceId) {
+        const choice = currentScene.choices?.find(c => c.id === choiceId)
+        if (choice) {
+          // 如果是注册场景，切换到注册界面
+          if (choice.nextScene === 'register') {
+            setAuthMode('register')
+            setPreludeIndex(-1) // 隐藏序章，显示注册界面
+            setPreludeTransition(false)
+            return
+          }
+          // 找到下一个场景的索引
+          const nextIndex = PRELUDE_SCENES.findIndex(s => s.id === choice.nextScene)
+          if (nextIndex !== -1) {
+            setPreludeIndex(nextIndex)
+          }
+          setPreludeTransition(false)
+          return
+        }
+      }
+      
+      // 检查下一个场景
+      if (currentScene.nextScene === 'register') {
+        setAuthMode('register')
+        setPreludeIndex(-1) // 隐藏序章，显示注册界面
+        setPreludeTransition(false)
+        return
+      }
+      
+      // 普通推进
+      if (preludeIndex < PRELUDE_SCENES.length - 1) {
+        setPreludeIndex(preludeIndex + 1)
+      }
+      setPreludeTransition(false)
+    }, 150) // 150ms 过渡
+  }
+
   // 注册
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -138,8 +386,6 @@ function App() {
       if (data.user && !data.session) {
         alert('注册成功！请查收邮箱验证邮件，验证后即可登录。')
         setAuthMode('login')
-      } else if (data.session) {
-        // 直接登录成功（ensureUserExists 会在 useEffect 中自动调用）
       }
     } catch (err: any) {
       alert(err.message || '注册失败')
@@ -172,6 +418,9 @@ function App() {
     setSession(null)
     setPartner(null)
     setChatHistory([])
+    setStoryData(null)
+    setShowStory(false)
+    setPreludeIndex(0)
   }
 
   // 发送消息
@@ -209,6 +458,12 @@ function App() {
         }
         setChatHistory(prev => [...prev, aiMsg])
         await loadPartner(session)
+      } else if (data.error?.code === 'QUOTA_EXCEEDED') {
+        // 额度不足，显示充值弹窗
+        setRechargeUrl(data.error.rechargeUrl)
+        setShowRechargeModal(true)
+        // 移除用户消息（因为没发送成功）
+        setChatHistory(prev => prev.slice(0, -1))
       }
     } catch (err) {
       console.error('Send failed:', err)
@@ -241,10 +496,38 @@ function App() {
         }])
         await loadPartner(session)
       } else {
-        alert(data.data?.message || '签到失败')
+        alert(data.message || data.data?.message || '签到失败')
       }
     } catch (err) {
       console.error('Checkin failed:', err)
+    }
+  }
+
+  // 改名
+  const handleRename = async (newName: string) => {
+    if (!session) return
+    try {
+      const res = await fetch(`${API_BASE}/ai-partner/name`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ name: newName })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setChatHistory(prev => [...prev, {
+          role: 'assistant',
+          content: `好的，以后我就叫"${newName}"啦！✨`,
+          timestamp: new Date()
+        }])
+        await loadPartner(session)
+      } else {
+        alert(data.error || '改名失败')
+      }
+    } catch (err) {
+      console.error('Rename failed:', err)
     }
   }
 
@@ -256,7 +539,87 @@ function App() {
     return { name: '懵懂期', emoji: '🌱', color: 'text-yellow-600' }
   }
 
-  // 未登录状态 - 显示登录/注册表单
+  // 渲染剧情内容（支持Markdown粗体）
+  const renderStoryContent = (content: string) => {
+    const parts = content.split(/(\*\*[^*]+\*\*)/g)
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i}>{part.slice(2, -2)}</strong>
+      }
+      return part
+    })
+  }
+
+  // ========== 序章界面（未登录时显示） ==========
+  const preludeScene = PRELUDE_SCENES[preludeIndex]
+  
+  if (!user && preludeScene) {
+    return (
+      <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+        <div className={`card max-w-md w-full transition-opacity duration-150 ${preludeTransition ? 'opacity-50' : 'opacity-100'}`}>
+          {/* 场景标题 */}
+          <div className="text-center mb-4">
+            <span className="text-sm text-primary-500 font-medium">
+              {preludeScene.title}
+            </span>
+          </div>
+          
+          {/* 场景内容 */}
+          <div className="bg-gray-50 rounded-xl p-4 mb-4 min-h-[200px]">
+            {preludeScene.type === 'dialogue' && preludeScene.speaker && (
+              <div className="flex items-center gap-2 mb-2">
+                <div className="ai-avatar w-8 h-8 text-lg">🦐</div>
+                <span className="font-medium text-primary-600">{preludeScene.speaker}</span>
+                {preludeScene.emotion && (
+                  <span className="text-xs bg-primary-100 text-primary-600 px-2 py-0.5 rounded-full">
+                    {preludeScene.emotion}
+                  </span>
+                )}
+              </div>
+            )}
+            <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+              {renderStoryContent(preludeScene.content)}
+            </div>
+          </div>
+          
+          {/* 选择按钮 */}
+          {preludeScene.type === 'choice' && preludeScene.choices && (
+            <div className="space-y-2">
+              {preludeScene.choices.map((choice) => (
+                <button
+                  key={choice.id}
+                  onClick={() => advancePrelude(choice.id)}
+                  className="w-full text-left px-4 py-3 bg-white border border-gray-200 rounded-xl hover:border-primary-300 hover:bg-primary-50 transition"
+                >
+                  <span className="text-gray-700">{choice.text}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          
+          {/* 继续按钮 */}
+          {preludeScene.type !== 'choice' && (
+            <button
+              onClick={() => advancePrelude()}
+              className="btn-primary w-full"
+            >
+              {preludeScene.nextScene === 'register' ? '签订契约' : '继续'}
+            </button>
+          )}
+          
+          {/* 已有账号 */}
+          <button
+            onClick={() => setPreludeIndex(-1)}
+            className="w-full mt-4 text-sm text-gray-400 hover:text-gray-600 transition"
+          >
+            已有账号？直接登录
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ========== 注册/登录界面 ==========
   if (!user) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
@@ -264,7 +627,7 @@ function App() {
           <div className="text-center mb-6">
             <div className="text-6xl mb-4">🌍</div>
             <h1 className="text-3xl font-bold mb-2">天下一家</h1>
-            <p className="text-gray-500">WeAreAll.World</p>
+            <p className="text-gray-500">签订契约，开始共生之旅</p>
           </div>
           
           {/* 切换登录/注册 */}
@@ -320,7 +683,7 @@ function App() {
               disabled={authLoading}
               className="btn-primary w-full disabled:opacity-50"
             >
-              {authLoading ? '处理中...' : (authMode === 'register' ? '开始旅程' : '登录')}
+              {authLoading ? '处理中...' : (authMode === 'register' ? '签订契约' : '登录')}
             </button>
           </form>
           
@@ -329,21 +692,147 @@ function App() {
               ? '注册即表示同意开始与AI伙伴的共生之旅' 
               : '还没有账号？点击上方注册'}
           </p>
+          
+          {/* 返回序章 */}
+          <button
+            onClick={() => setPreludeIndex(0)}
+            className="w-full mt-4 text-sm text-gray-400 hover:text-gray-600 transition"
+          >
+            ← 返回序章
+          </button>
         </div>
       </div>
     )
   }
 
   const stage = partner ? getGrowthStage(partner.total_contribution) : null
+  const scene = storyData?.currentScene
 
+  // ========== 登录后剧情界面 ==========
+  if (showStory && scene) {
+    return (
+      <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+        <div className="card max-w-md w-full">
+          {/* 章节标题 */}
+          <div className="text-center mb-4">
+            <span className="text-sm text-primary-500 font-medium">
+              第{scene.chapterId}章 · {scene.title}
+            </span>
+          </div>
+          
+          {/* 场景内容 */}
+          <div className="bg-gray-50 rounded-xl p-4 mb-4 min-h-[200px]">
+            {scene.type === 'dialogue' && scene.speaker && (
+              <div className="flex items-center gap-2 mb-2">
+                <div className="ai-avatar w-8 h-8 text-lg">
+                  {stage?.emoji || '🤖'}
+                </div>
+                <span className="font-medium text-primary-600">{scene.speaker}</span>
+                {scene.emotion && (
+                  <span className="text-xs bg-primary-100 text-primary-600 px-2 py-0.5 rounded-full">
+                    {scene.emotion}
+                  </span>
+                )}
+              </div>
+            )}
+            <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+              {renderStoryContent(scene.content)}
+            </div>
+          </div>
+          
+          {/* 选择按钮 */}
+          {scene.type === 'choice' && scene.choices && (
+            <div className="space-y-2">
+              {scene.choices.map((choice) => (
+                <button
+                  key={choice.id}
+                  onClick={() => advanceStory(choice.id)}
+                  disabled={storyLoading}
+                  className="w-full text-left px-4 py-3 bg-white border border-gray-200 rounded-xl hover:border-primary-300 hover:bg-primary-50 transition disabled:opacity-50"
+                >
+                  <span className="text-gray-700">{choice.text}</span>
+                  {choice.contributionBonus && (
+                    <span className="text-xs text-primary-500 ml-2">+{choice.contributionBonus}点</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+          
+          {/* 继续按钮 */}
+          {scene.type !== 'choice' && (
+            <button
+              onClick={() => advanceStory()}
+              disabled={storyLoading}
+              className="btn-primary w-full disabled:opacity-50"
+            >
+              {storyLoading ? '处理中...' : 
+                scene.type === 'milestone' ? '完成章节' : '继续'}
+            </button>
+          )}
+          
+          {/* 跳过按钮 */}
+          <button
+            onClick={() => setShowStory(false)}
+            className="w-full mt-2 text-sm text-gray-400 hover:text-gray-600 transition"
+          >
+            跳过剧情
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ========== 充值弹窗 ==========
+  const RechargeModal = () => (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center">
+        <div className="text-5xl mb-4">🔋</div>
+        <h3 className="text-xl font-bold text-gray-800 mb-2">Token 额度不足</h3>
+        <p className="text-gray-500 mb-6">
+          你的 AI 对话额度已用完，充值后可继续与 AI 伙伴聊天～
+        </p>
+        <div className="space-y-3">
+          <a
+            href={rechargeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-primary block w-full"
+          >
+            前往充值
+          </a>
+          <button
+            onClick={() => setShowRechargeModal(false)}
+            className="w-full py-3 text-gray-500 hover:text-gray-700 transition"
+          >
+            稍后再说
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  // ========== 主界面 ==========
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* 充值弹窗 */}
+      {showRechargeModal && <RechargeModal />}
+      
       {/* 顶部导航 */}
       <header className="gradient-bg text-white p-4 sticky top-0 z-10">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <h1 className="text-xl font-bold">🌍 天下一家</h1>
           <div className="flex items-center gap-2">
             <span className="text-sm opacity-80">{partner?.total_contribution || 0} 点</span>
+            {/* 剧情按钮 */}
+            {storyData && !storyData.progress.completedChapters.includes(5) && (
+              <button 
+                onClick={() => setShowStory(true)}
+                className="bg-white/20 px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition"
+              >
+                📖 剧情
+              </button>
+            )}
             <button 
               onClick={handleCheckin}
               className="bg-white/20 px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition"
@@ -369,7 +858,18 @@ function App() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold">小零</h2>
+                <h2 className="text-lg font-bold">{partner?.name || '小零'}</h2>
+                <button 
+                  onClick={() => {
+                    const newName = prompt('给你的AI伙伴起个名字吧：', partner?.name || '小零')
+                    if (newName && newName !== partner?.name) {
+                      handleRename(newName)
+                    }
+                  }}
+                  className="text-xs text-primary-500 hover:text-primary-600"
+                >
+                  ✏️ 改名
+                </button>
                 <span className={`text-sm ${stage?.color}`}>
                   {stage?.name}
                 </span>

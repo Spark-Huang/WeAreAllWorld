@@ -234,4 +234,44 @@ router.post('/checkin', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * PUT /api/v1/ai-partner/name
+ * 更新 AI 伙伴名称
+ */
+router.put('/name', async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { name } = req.body;
+    
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      res.status(400).json({ error: 'Name is required' });
+      return;
+    }
+    
+    if (name.length > 20) {
+      res.status(400).json({ error: 'Name must be 20 characters or less' });
+      return;
+    }
+    
+    const { error } = await supabase
+      .from('ai_partners')
+      .update({ name: name.trim() })
+      .eq('user_id', userId);
+    
+    if (error) {
+      throw error;
+    }
+    
+    res.json({ success: true, data: { name: name.trim() } });
+  } catch (err) {
+    console.error('Update name error:', err);
+    res.status(500).json({ error: 'Failed to update name' });
+  }
+});
+
 export { router as aiPartnerRouter };

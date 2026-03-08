@@ -4,6 +4,7 @@
  * 设计：
  * 1. 对话时快速响应，只记录消息和快速判定
  * 2. 每15分钟批量 LLM 评估，补偿贡献值差异
+ * 3. 集成 New API 网关进行 Token 计费
  */
 
 import { Router, Request, Response } from 'express';
@@ -11,6 +12,8 @@ import { createClient } from '@supabase/supabase-js';
 import { qualityJudgeService } from '../../contribution-evaluation/services/quality-judge.service';
 import { asyncQualityEvaluationService } from '../../contribution-evaluation/services/async-quality-evaluation.service';
 import { LLMService } from '../../services/llm.service';
+import { getNewApiService } from '../../services/new-api.service';
+import { quotaCheckMiddleware } from '../middleware/quota-check.middleware';
 
 const router: Router = Router();
 const SUPABASE_URL = process.env.SUPABASE_URL!;
@@ -28,8 +31,10 @@ const userSessions = new Map<string, { sessionId: string; lastActivity: number }
 /**
  * POST /api/v1/dialogue
  * 发送对话消息并获取AI回复
+ * 
+ * 添加额度检查中间件
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', quotaCheckMiddleware(1000), async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
     const { message } = req.body;
@@ -110,12 +115,13 @@ router.post('/', async (req: Request, res: Response) => {
       });
     
     // 6. 快速更新贡献值（使用快速判定结果）
+    // 注意：不再传入 ai_understanding，避免重复插入记录
     await supabase.rpc('update_contribution', {
       p_user_id: userId,
       p_points: quickResult.points,
       p_category: quickResult.qualityType,
       p_data_rarity: quickResult.dataRarity,
-      p_ai_understanding: { quick: true },
+      p_ai_understanding: null,
       p_message_hash: null
     });
     
