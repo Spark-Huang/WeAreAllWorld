@@ -230,18 +230,24 @@ function App() {
         // 转换为聊天消息格式
         const messages: ChatMessage[] = []
         data.data.forEach((log: any) => {
-          if (log.understanding?.userMessage) {
+          // 优先使用 raw_message/raw_reply，备选使用 understanding
+          const userMessage = log.rawMessage || log.understanding?.userMessage
+          const aiReply = log.rawReply || log.understanding?.aiReply
+          
+          if (userMessage) {
             messages.push({
               role: 'user',
-              content: log.understanding.userMessage,
+              content: userMessage,
               timestamp: new Date(log.timestamp)
             })
           }
-          if (log.understanding?.aiReply) {
+          if (aiReply) {
             messages.push({
               role: 'assistant',
-              content: log.understanding.aiReply,
-              timestamp: new Date(log.timestamp)
+              content: aiReply,
+              timestamp: new Date(log.timestamp),
+              qualityType: log.category,
+              points: log.quickPoints
             })
           }
         })
