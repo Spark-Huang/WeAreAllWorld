@@ -2,7 +2,12 @@
  * 天下一家（WeAreAll.World）- 主入口
  */
 
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// 显式加载 .env 文件
+config({ path: resolve(__dirname, '../.env') });
+
 import { TelegramBotService } from './services/telegram-bot.service';
 import { ScheduledTaskService } from './contribution-evaluation/services/scheduled-task.service';
 import { asyncQualityEvaluationService } from './contribution-evaluation/services/async-quality-evaluation.service';

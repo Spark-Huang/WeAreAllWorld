@@ -5,9 +5,13 @@
  * 1. 用户注册/登录
  * 2. 用户信息管理
  * 3. 新手引导流程
+ * 4. New API 自动同步
+ * 5. OpenClaw 实例自动创建
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getNewApiService } from './new-api.service';
+import { getOpenClawProvisionService } from './openclaw-provision.service';
 
 export interface User {
   id: string;
@@ -112,6 +116,46 @@ export class UserService {
       console.error('创建用户失败:', createError);
       throw createError;
     }
+    
+    // 🆕 自动同步到 New API
+    try {
+      const newApiService = getNewApiService();
+      console.log(`[DEBUG] getNewApiService() 返回:`, newApiService ? '实例' : 'null');
+      if (newApiService) {
+        const syncResult = await newApiService.syncUser({ 
+          userId: newUser.id,
+          email: telegramUsername ? `${telegramUsername}@weareall.world` : undefined
+        });
+        if (syncResult.success) {
+          console.log(`✅ 用户 ${newUser.id} 已同步到 New API`);
+        } else {
+          console.warn(`⚠️ 用户 ${newUser.id} New API 同步失败:`, syncResult.error);
+        }
+      } else {
+        console.warn(`⚠️ New API 服务不可用，跳过同步`);
+      }
+    } catch (syncError) {
+      console.warn('New API 同步异常:', syncError);
+      // 不阻断注册流程
+    }
+    
+    // 🆕 自动创建 OpenClaw 实例（异步，不阻塞）
+    setImmediate(async () => {
+      try {
+        const openclawService = getOpenClawProvisionService();
+        if (openclawService) {
+          console.log(`🚀 为用户 ${newUser.id} 创建 OpenClaw 实例...`);
+          const result = await openclawService.provisionForUser(newUser.id);
+          if (result.success) {
+            console.log(`✅ 用户 ${newUser.id} OpenClaw 实例创建成功: ${result.instance?.podName}`);
+          } else {
+            console.warn(`⚠️ 用户 ${newUser.id} OpenClaw 实例创建失败:`, result.error);
+          }
+        }
+      } catch (err) {
+        console.warn('OpenClaw 实例创建异常:', err);
+      }
+    });
     
     return {
       user: this.mapUser(newUser),
