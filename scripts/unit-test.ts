@@ -55,7 +55,7 @@ async function test(name: string, fn: () => Promise<boolean>): Promise<void> {
 // 1. QualityJudgeService 白盒测试
 // ============================================
 
-import { QualityJudgeService, qualityJudgeService } from '../src/contribution-evaluation/services/quality-judge.service';
+import { QualityJudgeService, qualityJudgeService } from '../src_backend/contribution-evaluation/services/quality-judge.service';
 
 async function testQualityJudgeService(): Promise<void> {
   console.log('\n' + '='.repeat(60));
@@ -271,7 +271,7 @@ async function testUserService(): Promise<void> {
     return;
   }
 
-  const { UserService } = await import('../src/services/user.service');
+  const { UserService } = await import('../src_backend/services/user.service');
   const service = new UserService(supabaseUrl, supabaseKey);
   const adminClient = createClient(supabaseUrl, supabaseKey);
 
@@ -366,8 +366,8 @@ async function testMemoryPointsService(): Promise<void> {
     return;
   }
 
-  const { MemoryPointsService } = await import('../src/contribution-evaluation/services/memory-points.service');
-  const { UserService } = await import('../src/services/user.service');
+  const { MemoryPointsService } = await import('../src_backend/contribution-evaluation/services/memory-points.service');
+  const { UserService } = await import('../src_backend/services/user.service');
   
   const memoryService = new MemoryPointsService(supabaseUrl, supabaseKey);
   const userService = new UserService(supabaseUrl, supabaseKey);
@@ -448,9 +448,9 @@ async function testCentralEvaluationService(): Promise<void> {
     return;
   }
 
-  const { CentralEvaluationService } = await import('../src/contribution-evaluation/services/central-evaluation.service');
-  const { UserService } = await import('../src/services/user.service');
-  const { MemoryPointsService } = await import('../src/contribution-evaluation/services/memory-points.service');
+  const { CentralEvaluationService } = await import('../src_backend/contribution-evaluation/services/central-evaluation.service');
+  const { UserService } = await import('../src_backend/services/user.service');
+  const { MemoryPointsService } = await import('../src_backend/contribution-evaluation/services/memory-points.service');
   
   const evalService = new CentralEvaluationService(supabaseUrl, supabaseKey);
   const userService = new UserService(supabaseUrl, supabaseKey);
@@ -529,9 +529,9 @@ async function testIntegration(): Promise<void> {
     return;
   }
 
-  const { UserService } = await import('../src/services/user.service');
-  const { MemoryPointsService } = await import('../src/contribution-evaluation/services/memory-points.service');
-  const { CentralEvaluationService } = await import('../src/contribution-evaluation/services/central-evaluation.service');
+  const { UserService } = await import('../src_backend/services/user.service');
+  const { MemoryPointsService } = await import('../src_backend/contribution-evaluation/services/memory-points.service');
+  const { CentralEvaluationService } = await import('../src_backend/contribution-evaluation/services/central-evaluation.service');
   
   const userService = new UserService(supabaseUrl, supabaseKey);
   const memoryService = new MemoryPointsService(supabaseUrl, supabaseKey);

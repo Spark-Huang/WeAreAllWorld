@@ -14,7 +14,7 @@
     "dev:full": "concurrently \"pnpm dev:api\" \"pnpm dev:frontend\" \"pnpm dev:admin\"",
     "build:admin": "cd admin && pnpm build",
     "test": "jest",
-    "test:unit": "node --test src_test/unit-test.ts",
+    "test:unit": "ts-node scripts/unit-test.ts",
     "test:e2e": "ts-node scripts/e2e-test.ts",
     "test:security": "ts-node scripts/security-test.ts",
     "test:all": "ts-node scripts/unit-test.ts && ts-node scripts/e2e-test.ts && ts-node scripts/security-test.ts",

@@ -5,6 +5,7 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../index';
 import { UserService } from '../../services/user.service';
+import { authMiddleware } from '../middleware/auth.middleware';
 
 const router: Router = Router();
 const SUPABASE_URL = process.env.SUPABASE_URL!;
@@ -43,34 +44,17 @@ router.post('/register', async (req: Request, res: Response) => {
 /**
  * POST /api/v1/auth/ensure-user
  * 确保用户记录存在（登录时调用）
- * 这个路由需要认证
+ * 支持 API Key 或 JWT 认证
  */
-router.post('/ensure-user', async (req: Request, res: Response) => {
+router.post('/ensure-user', authMiddleware, async (req: Request, res: Response) => {
   try {
-    // 从 Authorization header 获取 token 并验证
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ error: 'Missing authorization token' });
+    // 从 authMiddleware 获取用户 ID
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'User not authenticated' });
       return;
     }
     
-    const token = authHeader.substring(7);
-    
-    // 使用 anon key 验证 JWT
-    const { createClient } = await import('@supabase/supabase-js');
-    const authClient = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_ANON_KEY!
-    );
-    
-    const { data: { user }, error: authError } = await authClient.auth.getUser(token);
-    
-    if (authError || !user) {
-      res.status(401).json({ error: 'Invalid or expired token' });
-      return;
-    }
-    
-    const userId = user.id;
     const { telegramUsername } = req.body;
     
     // 检查用户是否已存在

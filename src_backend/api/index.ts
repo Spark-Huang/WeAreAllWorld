@@ -2,6 +2,11 @@
  * 天下一家 - REST API 入口
  */
 
+// 确保环境变量在最开始加载
+import { config } from 'dotenv';
+import { resolve } from 'path';
+config({ path: resolve(__dirname, '../../.env') });
+
 import express, { Express, Request, Response, NextFunction, Router } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
