@@ -69,18 +69,18 @@ COMMENT ON COLUMN ai_partners.personality IS 'AI 性格类型：warm(温暖), hu
 CREATE OR REPLACE FUNCTION analyze_contribution_after_dialogue()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- 插入贡献值详情记录
+  -- 插入贡献值详情记录（使用 granted_power 替代 quality_score）
   INSERT INTO contribution_details (dialogue_id, user_id, points, rating, reason, created_at)
   VALUES (
     NEW.id,
     NEW.user_id,
-    NEW.quality_score,
+    NEW.granted_power,
     CASE 
-      WHEN NEW.quality_score >= 6 THEN 'legendary'
-      WHEN NEW.quality_score >= 5 THEN 'collection'
-      WHEN NEW.quality_score >= 4 THEN 'precious'
-      WHEN NEW.quality_score >= 3 THEN 'rare'
-      WHEN NEW.quality_score >= 2 THEN 'active'
+      WHEN NEW.granted_power >= 6 THEN 'legendary'
+      WHEN NEW.granted_power >= 5 THEN 'collection'
+      WHEN NEW.granted_power >= 4 THEN 'precious'
+      WHEN NEW.granted_power >= 3 THEN 'rare'
+      WHEN NEW.granted_power >= 2 THEN 'active'
       ELSE 'common'
     END,
     '对话质量评分',
