@@ -13,12 +13,13 @@
     "dev:all": "concurrently \"pnpm dev\" \"pnpm dev:frontend\"",
     "dev:full": "concurrently \"pnpm dev:api\" \"pnpm dev:frontend\" \"pnpm dev:admin\"",
     "build:admin": "cd admin && pnpm build",
-    "test": "jest",
-    "test:unit": "ts-node scripts/unit-test.ts",
-    "test:e2e": "ts-node scripts/e2e-test.ts",
-    "test:security": "ts-node scripts/security-test.ts",
-    "test:all": "ts-node scripts/unit-test.ts && ts-node scripts/e2e-test.ts && ts-node scripts/security-test.ts",
-    "lint": "eslint src/**/*.ts"
+    "test": "pnpm test:unit",
+    "test:unit": "npx ts-node tests/regression/unit/unit-test.ts",
+    "test:e2e": "npx ts-node tests/regression/e2e/e2e-test.ts",
+    "test:security": "npx ts-node tests/regression/security/security-test.ts",
+    "test:all": "npx ts-node tests/run-all-tests.ts",
+    "lint": "eslint src/**/*.ts",
+    "test:regression": "pnpm test:all"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

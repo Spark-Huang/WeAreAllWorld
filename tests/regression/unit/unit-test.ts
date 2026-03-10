@@ -55,7 +55,7 @@ async function test(name: string, fn: () => Promise<boolean>): Promise<void> {
 // 1. QualityJudgeService 白盒测试
 // ============================================
 
-import { QualityJudgeService, qualityJudgeService } from '../src_backend/contribution-evaluation/services/quality-judge.service';
+import { QualityJudgeService, qualityJudgeService } from '../../../src_backend/contribution-evaluation/services/quality-judge.service';
 
 async function testQualityJudgeService(): Promise<void> {
   console.log('\n' + '='.repeat(60));
