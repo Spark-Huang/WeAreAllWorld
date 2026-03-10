@@ -196,6 +196,18 @@ spec:
           value: "true"
         - name: GATEWAY__PORT
           value: "18789"
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openclaw-api-keys
+              key: anthropic-api-key
+              optional: true
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openclaw-api-keys
+              key: openai-api-key
+              optional: true
         resources:
           requests:
             memory: "256Mi"

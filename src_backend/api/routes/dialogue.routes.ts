@@ -82,22 +82,39 @@ router.post('/', quotaCheckMiddleware(1000), async (req: Request, res: Response)
         });
         
         if (healthCheck && healthCheck.ok) {
-          // TODO: 实现 WebSocket 连接发送消息
-          // 暂时返回 Pod 状态信息
           console.log(`[对话] OpenClaw Pod 健康检查通过`);
           
-          // 使用后备 LLM 服务，但标记来源
-          const quickResult = qualityJudgeService.calculateQuality(message);
+          // 尝试通过 WebSocket 发送消息
+          const { getOpenClawClientManager } = require('../../services/openclaw-websocket.service');
+          const wsManager = getOpenClawClientManager();
           
-          return res.json({
-            success: true,
-            data: {
-              aiReply: `【专属 OpenClaw Pod 已就绪】\n你的专属 AI Pod 正在运行中。完整对话功能正在开发中，当前使用共享 LLM 服务回复。\n\nPod: ${openclawEndpoint.split('/')[2]}`,
-              qualityResult: quickResult,
-              source: 'dedicated-openclaw-pending',
-              podName: openclawEndpoint.split('/')[2]
+          if (wsManager) {
+            console.log(`[对话] 尝试 WebSocket 连接...`);
+            const response = await wsManager.sendMessage(userId, openclawEndpoint, message);
+            
+            if (response.type !== 'error') {
+              // 记录消息到数据库
+              await recordMessage(userId, message, response.content);
+              
+              // 快速质量判定
+              const quickResult = qualityJudgeService.calculateQuality(message);
+              
+              return res.json({
+                success: true,
+                data: {
+                  aiReply: response.content,
+                  qualityResult: quickResult,
+                  source: 'dedicated-openclaw',
+                  podName: openclawEndpoint.split('/')[2]
+                }
+              });
+            } else {
+              console.warn(`[对话] WebSocket 响应错误:`, response.content);
             }
-          });
+          }
+          
+          // WebSocket 失败，使用后备 LLM 服务
+          console.log(`[对话] WebSocket 不可用，使用后备 LLM`);
         }
       } catch (err) {
         console.warn(`[对话] 专属 Pod 请求失败，使用后备:`, err);
