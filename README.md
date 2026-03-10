@@ -1,6 +1,6 @@
 # 天下一家 (WeAreAllWorld)
 
-> AI伙伴养成 + 文字冒险 + 实用助手平台
+> AI伙伴养成 + 文字冒险 + 多终端支持
 
 ## 项目简介
 
@@ -16,21 +16,82 @@
 
 你，就是那个被选中的人。
 
-### 核心特性
+## 核心特性
 
 - 🤖 **AI伙伴养成** - 通过对话培养独特的 AI 伙伴
 - 📈 **贡献值系统** - 高质量对话获得更多贡献值
 - 🎯 **里程碑解锁** - 达成目标解锁 AI 新能力
 - 💤 **休眠机制** - 长期不活跃导致 AI 休眠
-- 🔐 **安全认证** - Supabase Auth + API Key 双重认证
+- 📖 **剧情系统** - 5章剧情引导用户与 AI 建立羁绊
+- 🌐 **多终端支持** - Web + Telegram（零门槛注册）
+- 🌍 **国际化** - 中英文智能切换
+- 🔐 **专属 Pod** - 每用户独立的 OpenClaw Pod
+
+## 技术架构
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        多终端入口                            │
+├─────────────────┬─────────────────┬─────────────────────────┤
+│   Web 前端      │  Telegram Bot   │    更多终端...          │
+│  (React+Vite)   │   (grammy)      │                         │
+└────────┬────────┴────────┬────────┴─────────────────────────┘
+         │                 │
+         └────────┬────────┘
+                  │
+         ┌────────▼────────┐
+         │    后端 API     │
+         │  (Express+TS)   │
+         └────────┬────────┘
+                  │
+    ┌─────────────┼─────────────┐
+    │             │             │
+┌───▼───┐   ┌─────▼─────┐   ┌───▼───┐
+│Supabase│   │ OpenClaw  │   │ GLM-5 │
+│  (DB)  │   │  (Pod池)  │   │ (LLM) │
+└────────┘   └───────────┘   └───────┘
+```
 
 ## 技术栈
 
-- **后端**: Node.js + Express + TypeScript
-- **前端**: Vite + React + Tailwind CSS
-- **数据库**: Supabase (PostgreSQL + RLS)
-- **AI**: GLM-5 (华为云 ModelArts)
-- **部署**: PM2
+| 层级 | 技术 |
+|-----|------|
+| **前端** | Vite + React + Tailwind CSS + i18next |
+| **后端** | Node.js + Express + TypeScript |
+| **数据库** | Supabase (PostgreSQL + Row Level Security) |
+| **AI 运行时** | OpenClaw (Kubernetes Pod 池) |
+| **LLM** | GLM-5 (华为云 ModelArts MAAS) |
+| **Telegram** | grammy 框架 |
+| **容器镜像** | 华为云 SWR |
+
+## 项目结构
+
+```
+WeAreAllWorld/
+├── src_frontend/          # Web 前端
+│   ├── src/
+│   │   ├── App.tsx        # 主应用
+│   │   ├── i18n/          # 国际化
+│   │   └── components/    # 组件
+│   └── ...
+├── src_backend/           # 后端 API
+│   ├── api/
+│   │   ├── routes/        # API 路由
+│   │   └── middleware/    # 中间件
+│   ├── services/          # 业务服务
+│   └── contribution-evaluation/  # 贡献值评估
+├── src_multi_terminal/    # 多终端支持
+│   ├── telegram/          # Telegram Bot
+│   └── web/               # Web 端（预留）
+├── src_admin/             # 管理后台
+├── docs/                  # 文档
+│   ├── mvp/               # MVP 文档
+│   ├── sql/               # 数据库迁移
+│   └── ...
+└── tests/                 # 测试
+    ├── regression/        # 回归测试
+    └── screenshots/       # 截图
+```
 
 ## 快速开始
 
@@ -38,7 +99,8 @@
 
 - Node.js >= 18
 - pnpm >= 8
-- Supabase 账号
+- Docker (可选)
+- Kubernetes (可选，用于 OpenClaw Pod 池)
 
 ### 安装
 
@@ -50,104 +112,83 @@ cd WeAreAllWorld
 # 安装依赖
 pnpm install
 
-# 安装前端依赖
-cd frontend && pnpm install && cd ..
+# 配置环境变量
+cp .env.example .env
+# 编辑 .env 填入配置
 ```
 
-### 配置
+### 启动开发服务器
 
-创建 `.env` 文件：
+```bash
+# 启动后端 (端口 3000)
+pnpm dev
 
-```env
+# 启动前端 (端口 5173)
+pnpm dev:frontend
+
+# 同时启动
+pnpm dev:all
+```
+
+### 启动 Telegram Bot
+
+```bash
+cd src_multi_terminal/telegram
+pnpm install
+TELEGRAM_BOT_TOKEN=your_token pnpm dev
+```
+
+## 环境变量
+
+```bash
 # Supabase
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_KEY=your_service_key
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_KEY=your_key
 
-# LLM
-LLM_BASE_URL=https://api.modelarts-maas.com/v2
-LLM_API_KEY=your_llm_key
-LLM_MODEL=glm-5
-
-# API 认证
-API_KEY=your_api_key
+# LLM API
+MAAS_API_KEY=your_glm5_key
+MAAS_API_URL=https://api.modelarts-maas.com/openai/v1
 
 # Telegram Bot (可选)
 TELEGRAM_BOT_TOKEN=your_bot_token
+
+# OpenClaw Gateway (可选)
+OPENCLAW_GATEWAY=http://openclaw-gateway:8080
 ```
 
-### 运行
+## API 端点
+
+### Web API
+
+| 端点 | 说明 |
+|-----|------|
+| `POST /api/v1/dialogue` | 发送对话 |
+| `GET /api/v1/ai-partner` | 获取 AI 伙伴信息 |
+| `POST /api/v1/ai-partner/checkin` | 每日签到 |
+| `GET /api/v1/story` | 获取剧情 |
+| `POST /api/v1/story/advance` | 推进剧情 |
+
+### Telegram API
+
+| 端点 | 说明 |
+|-----|------|
+| `POST /api/v1/telegram/auth` | 自动注册/登录 |
+| `GET /api/v1/telegram/status/:id` | 获取状态 |
+| `POST /api/v1/telegram/checkin` | 每日签到 |
+
+## 数据库迁移
+
+在 Supabase Dashboard 执行：
 
 ```bash
-# 开发模式
-pnpm dev
+# 核心表
+docs/sql/01_init.sql
 
-# 前端开发
-cd frontend && pnpm dev
+# Telegram 支持
+docs/sql/telegram-support.sql
 
-# 生产部署
-pnpm build
-pm2 start ecosystem.config.json
-```
-
-## API 文档
-
-### 基础信息
-
-- **Base URL**: `http://localhost:3000/api/v1`
-- **认证方式**: Bearer Token (JWT) 或 API Key
-
-### 端点列表
-
-#### 认证
-
-| 方法 | 路径 | 描述 |
-|------|------|------|
-| POST | /auth/create-user | 创建用户记录 |
-
-#### 用户
-
-| 方法 | 路径 | 描述 | 认证 |
-|------|------|------|------|
-| GET | /user/profile | 获取用户资料 | ✓ |
-
-#### AI 伙伴
-
-| 方法 | 路径 | 描述 | 认证 |
-|------|------|------|------|
-| GET | /ai-partner | 获取 AI 伙伴信息 | ✓ |
-| POST | /ai-partner/checkin | 每日签到 | ✓ |
-| GET | /ai-partner/milestones | 获取里程碑列表 | ✓ |
-
-#### 对话
-
-| 方法 | 路径 | 描述 | 认证 |
-|------|------|------|------|
-| POST | /dialogue | 发送消息 | ✓ |
-| GET | /dialogue/history | 获取对话历史 | ✓ |
-
-#### 统计
-
-| 方法 | 路径 | 描述 | 认证 |
-|------|------|------|------|
-| GET | /stats/weekly | 周统计 | ✓ |
-| GET | /stats/overview | 总览统计 | ✓ |
-
-### 请求示例
-
-```bash
-# 使用 API Key 认证
-curl -X POST http://localhost:3000/api/v1/dialogue \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: your_api_key" \
-  -H "x-user-id: user_uuid" \
-  -d '{"message": "你好"}'
-
-# 使用 JWT 认证
-curl -X POST http://localhost:3000/api/v1/dialogue \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your_jwt_token" \
-  -d '{"message": "你好"}'
+# 社交分享
+docs/sql/share_records.sql
 ```
 
 ## 测试
@@ -156,40 +197,56 @@ curl -X POST http://localhost:3000/api/v1/dialogue \
 # 单元测试
 pnpm test:unit
 
-# API 回归测试
-./scripts/api-test.sh
+# 回归测试
+pnpm test:regression
 ```
 
-## 项目结构
+## 部署
 
-详见 [ARCHITECTURE.md](./ARCHITECTURE.md)
+### Docker
+
+```bash
+# 构建镜像
+docker build -t weareallworld:latest .
+
+# 运行
+docker run -p 3000:3000 --env-file .env weareallworld:latest
+```
+
+### Kubernetes
+
+```bash
+# 部署 OpenClaw Pod 池
+kubectl apply -f k8s/openclaw-deployment.yaml
+
+# 部署后端 API
+kubectl apply -f k8s/api-deployment.yaml
+```
 
 ## 贡献值系统
 
-### 质量类型
+| 行为 | 贡献值 |
+|-----|--------|
+| 每日签到 | +5 (连续 +1~7) |
+| 高质量对话 | +1~10 |
+| 剧情完成 | +10~50 |
+| 里程碑达成 | +25~100 |
 
-| 类型 | 贡献值 | 描述 |
-|------|--------|------|
-| special_memory | 10 | 特殊回忆 |
-| deep_thought | 8 | 深度思考 |
-| experience | 5 | 经历分享 |
-| emotion | 3 | 情感表达 |
-| daily | 2 | 日常对话 |
-| greeting | 1 | 问候 |
+## 里程碑
 
-### 成长阶段
-
-| 阶段 | 所需贡献值 | 解锁能力 |
-|------|-----------|----------|
-| 懵懂期 | 0 | 基础对话 |
-| 成长期 | 50 | 深度对话 |
-| 成熟期 | 200 | 专属记忆 |
-| 觉醒期 | 500 | 自我意识 |
+| 等级 | 贡献值 | 称号 | 解锁能力 |
+|-----|--------|------|---------|
+| 1 | 0 | 初识 | 基础对话 |
+| 2 | 25 | 相知 | 情感表达 |
+| 3 | 50 | 默契 | 专属记忆 |
+| 4 | 100 | 灵魂伴侣 | 深度思考 |
+| 5 | 200 | 命运共同体 | 完全觉醒 |
 
 ## 许可证
 
-MIT
+MIT License
 
-## 作者
+## 联系方式
 
-Spark-Huang
+- GitHub: https://github.com/Spark-Huang/WeAreAllWorld
+- 问题反馈: https://github.com/Spark-Huang/WeAreAllWorld/issues
