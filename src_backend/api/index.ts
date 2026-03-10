@@ -24,6 +24,7 @@ import newApiRouter from './routes/new-api.routes';
 import openclawRouter from './routes/openclaw.routes';
 import { socialShareRouter } from './routes/social-share.routes';
 import telegramRouter from './routes/telegram.routes';
+import emotionalRouter from './routes/emotional.routes';
 
 // 服务
 import { asyncQualityEvaluationService } from '../contribution-evaluation/services/async-quality-evaluation.service';
@@ -124,6 +125,9 @@ app.use(`${API_PREFIX}/share`, authMiddleware, socialShareRouter);
 
 // Telegram Bot 路由（无需认证，使用 Telegram ID 验证）
 app.use(`${API_PREFIX}/telegram`, telegramRouter);
+
+// 情感冲击功能路由
+app.use(`${API_PREFIX}/emotional`, emotionalRouter);
 
 // 管理员路由（需要 Admin API Key）
 app.use(`${API_PREFIX}/admin`, adminRouter);
