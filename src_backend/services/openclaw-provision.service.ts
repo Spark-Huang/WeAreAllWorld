@@ -197,7 +197,7 @@ spec:
         - name: GATEWAY__PORT
           value: "18789"
         - name: GATEWAY__AGENT__MODEL
-          value: "openai_api_compatible/glm-5"
+          value: "hwc_maas/glm-5"
         - name: ANTHROPIC_API_KEY
           valueFrom:
             secretKeyRef:
@@ -210,8 +210,14 @@ spec:
               name: openclaw-api-keys
               key: openai-api-key
               optional: true
-        - name: OPENAI_API_BASE
-          value: "https://open.bigmodel.cn/api/paas/v4"
+        - name: HWC_MAAS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openclaw-api-keys
+              key: hwc-maas-api-key
+              optional: true
+        - name: HWC_MAAS_BASE_URL
+          value: "https://api.modelarts-maas.com/v2"
         resources:
           requests:
             memory: "256Mi"
