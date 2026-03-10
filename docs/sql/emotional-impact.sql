@@ -105,13 +105,13 @@ CREATE OR REPLACE VIEW user_danger_status AS
 SELECT 
   u.id as user_id,
   ap.name as partner_name,
-  ap.contribution,
+  ap.current_contribution as contribution,
   ap.status,
   CASE 
-    WHEN ap.contribution <= 0 THEN 'critical'
-    WHEN ap.contribution <= 5 THEN 'high'
-    WHEN ap.contribution <= 15 THEN 'medium'
-    WHEN ap.contribution <= 30 THEN 'low'
+    WHEN ap.current_contribution <= 0 THEN 'critical'
+    WHEN ap.current_contribution <= 5 THEN 'high'
+    WHEN ap.current_contribution <= 15 THEN 'medium'
+    WHEN ap.current_contribution <= 30 THEN 'low'
     ELSE 'safe'
   END as danger_level
 FROM users u
