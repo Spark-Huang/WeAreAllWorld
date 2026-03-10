@@ -1,5 +1,5 @@
 /**
- * 天下一家（WeAreAll.World）- LLM 服务
+ * 大同世界（WeAreAll.World）- LLM 服务
  * 
  * 用于AI伙伴的智能回复
  */

@@ -1,5 +1,5 @@
 /**
- * 天下一家 - REST API 入口
+ * 大同世界 - REST API 入口
  */
 
 // 确保环境变量在最开始加载
@@ -63,7 +63,7 @@ app.get('/health', (_req: Request, res: Response) => {
 // 根路径 - 欢迎页面
 app.get('/', (_req: Request, res: Response) => {
   res.json({
-    name: '天下一家 (WeAreAll.World)',
+    name: '大同世界 (WeAreAll.World)',
     version: '1.0.0',
     description: 'AI伙伴养成 + 文字冒险 + 实用助手平台',
     endpoints: {

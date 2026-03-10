@@ -1,11 +1,11 @@
 # 管理后台
 
-连接 **天下一家**、**New API**、**openclaw-helm** 的统一管理后台。
+连接 **大同世界**、**New API**、**openclaw-helm** 的统一管理后台。
 
 ## 📖 项目背景
 
 ### 目的
-为天下一家的用户提供 **OpenClaw 实例托管服务**：
+为大同世界的用户提供 **OpenClaw 实例托管服务**：
 1. 用户注册 → 自动创建 New API 账户（Token 计费）
 2. 用户付费 → 自动开通 OpenClaw 实例（K8S 容器）
 3. 用户管理 → 查询额度、充值、实例状态
@@ -23,12 +23,12 @@
 │                      http://localhost:3002                   │
 ├─────────────────────────────────────────────────────────────┤
 │  用户管理          Token 管理          OpenClaw 实例管理      │
-│  (天下一家)        (New API)          (openclaw-helm)        │
+│  (大同世界)        (New API)          (openclaw-helm)        │
 └─────────────────────────────────────────────────────────────┘
          │                    │                    │
          ▼                    ▼                    ▼
 ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
-│   天下一家       │  │    New API      │  │  openclaw-helm  │
+│   大同世界       │  │    New API      │  │  openclaw-helm  │
 │   (Supabase)    │  │   (Docker)      │  │    (K8S)        │
 │                 │  │                 │  │                 │
 │  • 用户认证      │  │  • Token 管理   │  │  • 实例创建      │
@@ -47,7 +47,7 @@ GET /api/health
 ### 用户管理
 ```
 GET  /api/users           # 用户列表
-POST /api/users           # 创建用户（同步到天下一家 + New API）
+POST /api/users           # 创建用户（同步到大同世界 + New API）
 GET  /api/users/:id       # 用户详情
 ```
 
@@ -170,11 +170,11 @@ CREATE TABLE openclaw_instances (
 - **openclaw-helm**: `helm repo update && helm upgrade <release> openclaw/openclaw`
 - **管理后台**: `git pull && pnpm install && pnpm build && pm2 restart admin-panel`
 
-## 与天下一家的关系
+## 与大同世界的关系
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        天下一家 (WeAreAllWorld)                  │
+│                        大同世界 (WeAreAllWorld)                  │
 │                     https://weareallworld.ai                    │
 ├─────────────────────────────────────────────────────────────────┤
 │  • AI 伙伴养成平台                                                │
@@ -188,7 +188,7 @@ CREATE TABLE openclaw_instances (
 │                        管理后台 (admin-panel)                    │
 │                     http://localhost:3002                       │
 ├─────────────────────────────────────────────────────────────────┤
-│  • 用户管理（复用天下一家 Supabase）                               │
+│  • 用户管理（复用大同世界 Supabase）                               │
 │  • Token 管理（调用 New API）                                     │
 │  • OpenClaw 实例管理（调用 Helm）                                 │
 └─────────────────────────────────────────────────────────────────┘

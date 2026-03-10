@@ -1,4 +1,4 @@
-# 天下一家（WeAreAll.World） MVP验证文档
+# 大同世界（WeAreAll.World） MVP验证文档
 
 **文档类型**：MVP验证文档
 **版本**：v2.0

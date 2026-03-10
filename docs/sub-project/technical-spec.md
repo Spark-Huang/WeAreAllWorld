@@ -1,6 +1,6 @@
-# 天下一家（WeAreAll.World） 实用能力子AI Agent（基于OpenClaw）技术规格说明书
+# 大同世界（WeAreAll.World） 实用能力子AI Agent（基于OpenClaw）技术规格说明书
 
-> 项目名称：天下一家（WeAreAll.World） Practical Sub-Agent (MVP)
+> 项目名称：大同世界（WeAreAll.World） Practical Sub-Agent (MVP)
 > 版本：v2.0
 > 日期：2026-02-23
 > 目标受众：外包开发团队
@@ -15,7 +15,7 @@
 
 ### 1.1 核心目标
 
-构建一个 C 端友好的 OpenClaw 托管服务，作为 **天下一家（WeAreAll.World）** 游戏的 **实用能力子AI Agent**，用户在需要实用能力时可以按需启动独立的 OpenClaw 实例，提供个性化的实用能力服务。
+构建一个 C 端友好的 OpenClaw 托管服务，作为 **大同世界（WeAreAll.World）** 游戏的 **实用能力子AI Agent**，用户在需要实用能力时可以按需启动独立的 OpenClaw 实例，提供个性化的实用能力服务。
 
 ### 1.2 核心原则（必须遵守）
 

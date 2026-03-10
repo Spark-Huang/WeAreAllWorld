@@ -1,9 +1,9 @@
 # MEMORY.md - 长期记忆
 
-## 项目：天下一家 (WeAreAllWorld)
+## 项目：大同世界 (WeAreAllWorld)
 
 ### 项目概述
-- **名称**: 天下一家 (原名: 共生世界)
+- **名称**: 大同世界 (原名: 大同世界)
 - **GitHub**: https://github.com/Spark-Huang/WeAreAllWorld
 - **路径**: `/root/.openclaw/workspace/WeAreAllWorld`
 - **技术栈**: TypeScript, Supabase, Node.js, React, Kubernetes

@@ -35,7 +35,7 @@ async function testI18n() {
   
   if (enBrandName?.includes('Great Unity World')) {
     console.log('✅ 英文品牌名称正确\n');
-  } else if (enBrandName?.includes('天下一家')) {
+  } else if (enBrandName?.includes('大同世界')) {
     console.log('⚠️ 显示中文（可能是 localStorage 缓存）\n');
   } else {
     console.log(`⚠️ 品牌名称: ${enBrandName}\n`);
@@ -62,7 +62,7 @@ async function testI18n() {
   const zhBrandName = await zhPage.locator('h1').first().textContent();
   console.log(`品牌名称: ${zhBrandName}`);
   
-  if (zhBrandName?.includes('天下一家')) {
+  if (zhBrandName?.includes('大同世界')) {
     console.log('✅ 中文品牌名称正确\n');
   } else if (zhBrandName?.includes('Great Unity World')) {
     console.log('⚠️ 显示英文（可能是 localStorage 缓存）\n');
@@ -100,7 +100,7 @@ async function testI18n() {
     const afterSwitchName = await switchPage.locator('h1').first().textContent();
     console.log(`切换后品牌名称: ${afterSwitchName}`);
     
-    if (afterSwitchName?.includes('天下一家')) {
+    if (afterSwitchName?.includes('大同世界')) {
       console.log('✅ 语言切换成功\n');
     } else {
       console.log('⚠️ 语言切换结果: ' + afterSwitchName + '\n');

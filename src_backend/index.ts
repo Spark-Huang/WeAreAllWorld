@@ -1,5 +1,5 @@
 /**
- * 天下一家（WeAreAll.World）- 主入口
+ * 大同世界（WeAreAll.World）- 主入口
  */
 
 import { config } from 'dotenv';
@@ -32,7 +32,7 @@ class Application {
    */
   async start(): Promise<void> {
     console.log('========================================');
-    console.log('  天下一家 (WeAreAll.World)');
+    console.log('  大同世界 (WeAreAll.World)');
     console.log('  版本: MVP v1.0');
     console.log('========================================\n');
     

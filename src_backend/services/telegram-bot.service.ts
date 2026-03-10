@@ -1,5 +1,5 @@
 /**
- * 天下一家（WeAreAll.World）- Telegram Bot 服务
+ * 大同世界（WeAreAll.World）- Telegram Bot 服务
  * 
  * 核心功能：
  * 1. 处理用户消息
@@ -133,7 +133,7 @@ export class TelegramBotService {
         // 新用户引导
         const step = this.userService.getCurrentOnboardingStep(user.onboardingStep);
         await ctx.reply(
-          `🌟 欢迎来到天下一家！\n\n` +
+          `🌟 欢迎来到大同世界！\n\n` +
           `我是零号，你的AI伙伴。在这里，我们共同成长，建立真正的连接。\n\n` +
           `💡 核心机制：\n` +
           `• 每周需要获得 ≥15 点贡献值\n` +

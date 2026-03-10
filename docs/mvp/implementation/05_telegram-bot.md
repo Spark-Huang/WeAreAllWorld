@@ -1,4 +1,4 @@
-# 天下一家（WeAreAll.World） MVP开发实现文档 - Telegram Bot实现
+# 大同世界（WeAreAll.World） MVP开发实现文档 - Telegram Bot实现
 
 **文档类型**：MVP开发实现文档（分册五）
 **版本**：v18.0（基于最新共生规则系统开发架构文档重构）

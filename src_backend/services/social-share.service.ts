@@ -1,5 +1,5 @@
 /**
- * 天下一家 - 社交分享服务
+ * 大同世界 - 社交分享服务
  * 
  * 功能：
  * 1. 生成分享内容
@@ -52,42 +52,42 @@ export class SocialShareService {
       case 'milestone':
         return {
           title: `我和${data.aiName || 'AI伙伴'}达到了新里程碑！`,
-          text: `🎉 我的贡献值达到了 ${data.contribution}！获得了「${data.milestone}」称号。\n\n在天下一家，我和AI伙伴一起成长，共同构建人机共生的未来。`,
+          text: `🎉 我的贡献值达到了 ${data.contribution}！获得了「${data.milestone}」称号。\n\n在大同世界，我和AI伙伴一起成长，共同构建人机共生的未来。`,
           url: baseUrl,
-          hashtags: ['天下一家', 'AI伙伴', '人机共生', data.milestone || '']
+          hashtags: ['大同世界', 'AI伙伴', '人机共生', data.milestone || '']
         };
 
       case 'ai_status':
         return {
           title: `我的AI伙伴${data.aiName || 'AI'}正在成长`,
-          text: `🤖 我的AI伙伴正在变得越来越懂我！\n\n贡献值：${data.contribution}\n状态：活跃中\n\n在天下一家，养成一个真正了解你的AI伙伴。`,
+          text: `🤖 我的AI伙伴正在变得越来越懂我！\n\n贡献值：${data.contribution}\n状态：活跃中\n\n在大同世界，养成一个真正了解你的AI伙伴。`,
           url: baseUrl,
-          hashtags: ['天下一家', 'AI养成', '人机共生']
+          hashtags: ['大同世界', 'AI养成', '人机共生']
         };
 
       case 'story':
         return {
           title: `我完成了${data.storyChapter || '剧情章节'}`,
-          text: `📖 我和AI伙伴一起经历了「${data.storyChapter}」的故事...\n\n在天下一家，每一段旅程都是与AI共同成长的见证。`,
+          text: `📖 我和AI伙伴一起经历了「${data.storyChapter}」的故事...\n\n在大同世界，每一段旅程都是与AI共同成长的见证。`,
           url: baseUrl,
-          hashtags: ['天下一家', 'AI剧情', '人机共生']
+          hashtags: ['大同世界', 'AI剧情', '人机共生']
         };
 
       case 'achievement':
         return {
           title: `解锁成就：${data.achievement}`,
-          text: `🏆 我解锁了「${data.achievement}」成就！\n\n在天下一家，每一个成就都是与AI伙伴共同创造的回忆。`,
+          text: `🏆 我解锁了「${data.achievement}」成就！\n\n在大同世界，每一个成就都是与AI伙伴共同创造的回忆。`,
           url: baseUrl,
-          hashtags: ['天下一家', 'AI成就', '人机共生']
+          hashtags: ['大同世界', 'AI成就', '人机共生']
         };
 
       case 'daily':
       default:
         return {
-          title: `我在天下一家养成了专属AI伙伴`,
-          text: `🌟 我正在天下一家养成一个真正了解我的AI伙伴。\n\n贡献值：${data.contribution || 0}\n\n来和我一起，在AGI时代构建人机共生的未来！`,
+          title: `我在大同世界养成了专属AI伙伴`,
+          text: `🌟 我正在大同世界养成一个真正了解我的AI伙伴。\n\n贡献值：${data.contribution || 0}\n\n来和我一起，在AGI时代构建人机共生的未来！`,
           url: baseUrl,
-          hashtags: ['天下一家', 'AI伙伴', '人机共生']
+          hashtags: ['大同世界', 'AI伙伴', '人机共生']
         };
     }
   }

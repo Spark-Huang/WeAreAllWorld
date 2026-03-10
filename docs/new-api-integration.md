@@ -2,7 +2,7 @@
 
 ## 概述
 
-本文档描述如何将 New API 网关集成到天下一家系统，实现：
+本文档描述如何将 New API 网关集成到大同世界系统，实现：
 1. Token 包计费控制
 2. 用户无感知的自动 API Key 关联
 3. SSO 单点登录到充值页面
@@ -13,7 +13,7 @@
 ┌──────────────────────────────────────────────────────────────┐
 │                      用户视角（无感知）                        │
 │                                                              │
-│  天下一家登录 → 对话 → Token不足 → 充值 → 继续对话            │
+│  大同世界登录 → 对话 → Token不足 → 充值 → 继续对话            │
 │                    ↓                           ↑             │
 │              后端自动调用                    自动返回         │
 │              New API Token                   充值页面         │
@@ -23,7 +23,7 @@
 │                      系统架构                                 │
 │                                                              │
 │  ┌─────────────┐         ┌─────────────┐                    │
-│  │  天下一家    │  创建用户 │   New API   │                    │
+│  │  大同世界    │  创建用户 │   New API   │                    │
 │  │   后端      │ ────────► │   (网关)    │                    │
 │  │             │  获取Token│             │                    │
 │  │  存储:      │ ◄──────── │  生成:      │                    │
@@ -48,13 +48,13 @@
   - Custom OAuth 支持 SSO
 
 ### SSO 方案：共享 Supabase Auth
-- 天下一家和 New API 共用 Supabase Auth
-- 用户在天下一家登录后，跳转 New API 自动登录
+- 大同世界和 New API 共用 Supabase Auth
+- 用户在大同世界登录后，跳转 New API 自动登录
 - 无需额外实现 OIDC Provider
 
 ## 数据库设计
 
-### 天下一家 users 表扩展
+### 大同世界 users 表扩展
 
 ```sql
 -- 添加 New API 关联字段
@@ -150,7 +150,7 @@ interface DialogueResponse {
 ### 流程 1: 用户登录时自动同步
 
 ```
-用户登录天下一家
+用户登录大同世界
     │
     ▼
 检查是否已有 new_api_token
@@ -209,7 +209,7 @@ New API 验证 SSO Token
 用户完成充值
     │
     ▼
-返回天下一家继续对话
+返回大同世界继续对话
 ```
 
 ## New API 配置
@@ -233,7 +233,7 @@ docker run --name new-api -d --restart always \
 
 | 配置项 | 值 |
 |--------|-----|
-| Name | 天下一家 |
+| Name | 大同世界 |
 | Slug | weareallworld |
 | Client ID | Supabase 匿名 Key |
 | Client Secret | (可选) |
@@ -246,7 +246,7 @@ docker run --name new-api -d --restart always \
 
 ### 3. 创建管理员 Token
 
-用于天下一家后端调用 New API 管理 API：
+用于大同世界后端调用 New API 管理 API：
 
 ```bash
 # 在 New API 管理后台创建

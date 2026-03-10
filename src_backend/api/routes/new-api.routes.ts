@@ -1,5 +1,5 @@
 /**
- * 天下一家（WeAreAll.World）- New API 路由
+ * 大同世界（WeAreAll.World）- New API 路由
  * 
  * 提供给前端的 API 接口
  */

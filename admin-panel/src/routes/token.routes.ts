@@ -12,7 +12,7 @@ router.get('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // 从天下一家获取 New API 用户 ID
+    // 从大同世界获取 New API 用户 ID
     const { data: user, error } = await supabase
       .from('users')
       .select('new_api_user_id, new_api_token')
@@ -44,7 +44,7 @@ router.post('/recharge', async (req, res) => {
   try {
     const { userId, amount } = req.body;
 
-    // 从天下一家获取用户信息
+    // 从大同世界获取用户信息
     const { data: user, error } = await supabase
       .from('users')
       .select('new_api_user_id, email')

@@ -19,14 +19,14 @@
 │                        管理后台 (admin-panel)                    │
 │                     http://localhost:3002                       │
 ├─────────────────────────────────────────────────────────────────┤
-│  • 用户管理（复用天下一家 Supabase）                               │
+│  • 用户管理（复用大同世界 Supabase）                               │
 │  • Token 管理（调用 New API）                                     │
 │  • OpenClaw 实例管理（调用 Helm）                                 │
 └─────────────────────────────────────────────────────────────────┘
          │                           │                           │
          ▼                           ▼                           ▼
 ┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
-│   天下一家       │         │    New API      │         │  openclaw-helm  │
+│   大同世界       │         │    New API      │         │  openclaw-helm  │
 │   (Supabase)    │         │   (Docker)      │         │    (K8S)        │
 │                 │         │                 │         │                 │
 │  • 用户认证      │         │  • Token 计费    │         │  • OpenClaw 实例 │
@@ -43,7 +43,7 @@
 | K8s 部署模板 | 使用 openclaw-helm 官方 Chart | ✅ |
 | Pod 生命周期管理 | 管理后台 `openclawService` | ✅ |
 | Token 计费 | New API 网关 | ✅ |
-| 用户管理 | 天下一家 Supabase | ✅ |
+| 用户管理 | 大同世界 Supabase | ✅ |
 
 ### 1.3 待完成的工作
 

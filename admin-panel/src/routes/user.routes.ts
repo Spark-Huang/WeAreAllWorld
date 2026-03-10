@@ -23,13 +23,13 @@ router.get('/', async (req, res) => {
 
 /**
  * POST /api/users
- * 创建用户（同步到天下一家 + New API）
+ * 创建用户（同步到大同世界 + New API）
  */
 router.post('/', async (req, res) => {
   try {
     const { email, password, name } = req.body;
 
-    // 1. 在天下一家创建用户
+    // 1. 在大同世界创建用户
     const { data: weareUser, error: weareError } = await supabase.auth.signUp({
       email,
       password,
@@ -43,7 +43,7 @@ router.post('/', async (req, res) => {
     // 2. 在 New API 创建用户
     const newApiUser = await newApiService.createUser(email, name);
 
-    // 3. 更新天下一家用户表，关联 New API
+    // 3. 更新大同世界用户表，关联 New API
     await supabase
       .from('users')
       .update({

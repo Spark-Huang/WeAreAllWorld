@@ -24,7 +24,7 @@
    - 模型: glm-5
    - 状态: 正常
 
-5. **天下一家代码集成**
+5. **大同世界代码集成**
    - 服务层: `src/services/new-api.service.ts`
    - API 路由: `src/api/routes/new-api.routes.ts`
    - 额度检查: `src/api/middleware/quota-check.middleware.ts`
@@ -54,7 +54,7 @@ curl -X POST http://localhost:3001/v1/chat/completions \
 
 **结果**: ✅ 成功返回 GLM 回复
 
-### 天下一家集成测试
+### 大同世界集成测试
 ```bash
 # 待数据库迁移后测试
 ```
@@ -62,7 +62,7 @@ curl -X POST http://localhost:3001/v1/chat/completions \
 ## 下一步操作
 
 1. 在 Supabase SQL Editor 执行迁移脚本
-2. 重启天下一家服务
+2. 重启大同世界服务
 3. 测试完整用户流程
 
 ## 管理命令

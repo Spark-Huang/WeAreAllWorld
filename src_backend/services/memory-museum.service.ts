@@ -287,7 +287,7 @@ export async function generateMemoryShareCard(memory: Memory): Promise<{
   return {
     title: `${typeInfo.emoji} ${typeInfo.label}`,
     content: memory.content.slice(0, 100) + (memory.content.length > 100 ? '...' : ''),
-    hashtags: ['#天下一家', '#AI记忆', `#${typeInfo.label}`]
+    hashtags: ['#大同世界', '#AI记忆', `#${typeInfo.label}`]
   }
 }
 

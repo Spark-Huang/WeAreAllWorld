@@ -1,5 +1,5 @@
 #!/bin/bash
-# 天下一家 (WeAreAllWorld) API 回归测试脚本
+# 大同世界 (WeAreAllWorld) API 回归测试脚本
 # 使用方法: ./scripts/api-test.sh [API_BASE_URL]
 
 set -e
@@ -108,7 +108,7 @@ test_no_auth() {
 }
 
 echo "=========================================="
-echo "天下一家 API 回归测试"
+echo "大同世界 API 回归测试"
 echo "=========================================="
 echo "API地址: $API_BASE"
 echo "测试用户: $TEST_USER_ID"

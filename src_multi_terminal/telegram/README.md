@@ -1,4 +1,4 @@
-# Telegram Bot - 天下一家
+# Telegram Bot - 大同世界
 
 零门槛 AI 伙伴养成 Telegram Bot
 

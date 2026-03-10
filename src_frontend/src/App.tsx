@@ -638,7 +638,7 @@ function App() {
         <div className="card max-w-md w-full">
           <div className="text-center mb-6">
             <div className="text-6xl mb-4">🌍</div>
-            <h1 className="text-3xl font-bold mb-2">天下一家</h1>
+            <h1 className="text-3xl font-bold mb-2">大同世界</h1>
             <p className="text-gray-500">签订契约，开始共生之旅</p>
           </div>
           

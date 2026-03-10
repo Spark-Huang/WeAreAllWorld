@@ -1,5 +1,5 @@
 /**
- * 共生世界（WeAreAll.World）- 服务层白盒测试套件
+ * 大同世界（WeAreAll.World）- 服务层白盒测试套件
  * 
  * 测试范围：
  * 1. QualityJudgeService - 贡献值质量判定
@@ -621,7 +621,7 @@ async function testIntegration(): Promise<void> {
 
 async function main(): Promise<void> {
   console.log('\n' + '█'.repeat(60));
-  console.log('█  共生世界服务层白盒测试套件 v1.0                  █');
+  console.log('█  大同世界服务层白盒测试套件 v1.0                  █');
   console.log('█'.repeat(60));
 
   const startTime = Date.now();

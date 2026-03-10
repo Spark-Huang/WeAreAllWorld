@@ -213,5 +213,5 @@ npx ts-node scripts/security-test.ts
 
 ---
 
-*报告生成: 天下一家安全测试套件 v1.0*  
+*报告生成: 大同世界安全测试套件 v1.0*  
 *修复脚本: src/contribution-evaluation/database/rls-policies.sql*

@@ -1,5 +1,5 @@
 /**
- * 天下一家（WeAreAll.World）- New API 网关服务
+ * 大同世界（WeAreAll.World）- New API 网关服务
  * 
  * 功能：
  * 1. 用户自动同步到 New API

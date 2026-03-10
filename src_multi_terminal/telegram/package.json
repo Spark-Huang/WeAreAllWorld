@@ -1,7 +1,7 @@
 {
   "name": "telegram-bot",
   "version": "1.0.0",
-  "description": "天下一家 Telegram Bot - AI 伙伴养成",
+  "description": "大同世界 Telegram Bot - AI 伙伴养成",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

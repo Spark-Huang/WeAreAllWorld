@@ -1,7 +1,7 @@
 {
   "name": "admin-panel",
   "version": "1.0.0",
-  "description": "管理后台 - 连接天下一家、New API、openclaw-helm",
+  "description": "管理后台 - 连接大同世界、New API、openclaw-helm",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",

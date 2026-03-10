@@ -1,5 +1,5 @@
 /**
- * 天下一家 - OpenClaw WebSocket 客户端
+ * 大同世界 - OpenClaw WebSocket 客户端
  * 
  * 功能：
  * 1. 连接到 OpenClaw Gateway

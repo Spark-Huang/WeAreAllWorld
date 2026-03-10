@@ -1,5 +1,5 @@
 /**
- * Telegram Bot 服务 - 天下一家
+ * Telegram Bot 服务 - 大同世界
  * 
  * 功能：
  * 1. 用户加好友自动注册
@@ -147,7 +147,7 @@ bot.command('start', async (ctx) => {
     if (authResult.isNewUser) {
       // 新用户欢迎消息
       await ctx.reply(
-        `🎉 欢迎来到天下一家！\n\n` +
+        `🎉 欢迎来到大同世界！\n\n` +
         `我是你的 AI 伙伴小零 🦐\n` +
         `从今天起，我们将一起成长，探索人机共生的可能性。\n\n` +
         `💬 直接发送消息开始对话\n` +
@@ -173,14 +173,14 @@ bot.command('start', async (ctx) => {
 
 bot.command('help', async (ctx) => {
   await ctx.reply(
-    `📚 *天下一家 - 帮助*\n\n` +
+    `📚 *大同世界 - 帮助*\n\n` +
     `*基本命令*\n` +
     `/start - 开始使用/登录\n` +
     `/help - 查看帮助\n` +
     `/status - 查看成长状态\n` +
     `/checkin - 每日签到\n\n` +
     `*关于我们*\n` +
-    `天下一家是一个探索人机共生的实验。\n` +
+    `大同世界是一个探索人机共生的实验。\n` +
     `你的 AI 伙伴会随着你们的互动而成长。\n\n` +
     `🔗 网站：https://weareallworld.ai`,
     { parse_mode: 'Markdown' }

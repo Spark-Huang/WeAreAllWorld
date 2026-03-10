@@ -1,5 +1,5 @@
 /**
- * 天下一家（WeAreAll.World）- 用户服务
+ * 大同世界（WeAreAll.World）- 用户服务
  * 
  * 核心功能：
  * 1. 用户注册/登录
@@ -53,7 +53,7 @@ export interface OnboardingStep {
  * 新手引导步骤
  */
 const ONBOARDING_STEPS: Omit<OnboardingStep, 'completed'>[] = [
-  { step: 0, title: '开始', description: '欢迎来到天下一家' },
+  { step: 0, title: '开始', description: '欢迎来到大同世界' },
   { step: 1, title: '情感建立', description: '与AI建立初步的情感连接' },
   { step: 2, title: '机制引入', description: '了解共生规则和贡献值系统' },
   { step: 3, title: '目标建立', description: '设定共同成长的目标' },
