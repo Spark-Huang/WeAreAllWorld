@@ -192,6 +192,10 @@ spec:
           value: "${userId}"
         - name: OPENCLAW_MODE
           value: "user-dedicated"
+        - name: GATEWAY__CONTROLUI__DANGEROUSLYALLOWHOSTHEADERORIGIN
+          value: "true"
+        - name: GATEWAY__PORT
+          value: "3000"
         resources:
           requests:
             memory: "256Mi"
@@ -210,7 +214,7 @@ spec:
     app: ${podName}
   ports:
   - port: 3000
-    targetPort: 3000
+    targetPort: 18789
   type: ClusterIP
 `;
   }
