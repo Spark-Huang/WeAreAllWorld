@@ -23,6 +23,7 @@ import { storyRouter } from './routes/story.routes';
 import newApiRouter from './routes/new-api.routes';
 import openclawRouter from './routes/openclaw.routes';
 import { socialShareRouter } from './routes/social-share.routes';
+import telegramRouter from './routes/telegram.routes';
 
 // 服务
 import { asyncQualityEvaluationService } from '../contribution-evaluation/services/async-quality-evaluation.service';
@@ -120,6 +121,9 @@ app.use(`${API_PREFIX}/story`, authMiddleware, storyRouter);
 app.use(`${API_PREFIX}/new-api`, authMiddleware, newApiRouter);
 app.use(`${API_PREFIX}/openclaw`, authMiddleware, openclawRouter);
 app.use(`${API_PREFIX}/share`, authMiddleware, socialShareRouter);
+
+// Telegram Bot 路由（无需认证，使用 Telegram ID 验证）
+app.use(`${API_PREFIX}/telegram`, telegramRouter);
 
 // 管理员路由（需要 Admin API Key）
 app.use(`${API_PREFIX}/admin`, adminRouter);
