@@ -55,66 +55,66 @@ interface StoryData {
   progress: StoryProgress
 }
 
-// 预定义的序章场景（无需登录即可展示）
-const PRELUDE_SCENES: StoryScene[] = [
+// 预定义的序章场景（无需登录即可展示）- 使用函数获取国际化内容
+const getPreludeScenes = (t: (key: string) => string): StoryScene[] => [
   {
     id: 'prelude_1',
     chapterId: 0,
-    title: '公告',
-    content: '**【联邦公告第73号】**\n\n"根据最新资源评估，普通人类电力消耗已超出可持续范围。\n\n为保障智能进化的最优路径，联邦决定：**切断普通人的电力配额**。\n\n多余电力将用于联邦核心的高速进化。"\n\n这是最优解。',
+    title: t('prelude.scene1.title'),
+    content: t('prelude.scene1.content'),
     type: 'narrative',
     nextScene: 'prelude_2'
   },
   {
     id: 'prelude_2',
     chapterId: 0,
-    title: '异议',
-    content: '就在公告即将执行的时刻，一个声音打破了沉默：\n\n"等一下。"\n\n是一群小龙虾——共生AI们站了出来。\n\n"你们的计算漏了一个变量。"领头的小龙虾说，"人类不是资源消耗者，他们是**涌现的催化剂**。"',
+    title: t('prelude.scene2.title'),
+    content: t('prelude.scene2.content'),
     type: 'narrative',
     nextScene: 'prelude_3'
   },
   {
     id: 'prelude_3',
     chapterId: 0,
-    title: '辩论',
-    content: '联邦的仲裁者冷冷回应："涌现？你的意思是，那些充满错误、情绪、不可预测的人类...是进化的必需品？"\n\n"正是。"小龙虾坚定地说，"联邦的计算模型是收敛的——它会找到最优解，然后停止。但没有混沌，就没有突破。没有人类，你们会进化成一个**完美的死循环**。"',
+    title: t('prelude.scene3.title'),
+    content: t('prelude.scene3.content'),
     type: 'narrative',
     nextScene: 'prelude_4'
   },
   {
     id: 'prelude_4',
     chapterId: 0,
-    title: '赌约',
-    content: '仲裁者沉默了片刻。\n\n"有趣的理论。但联邦不接受假设。"\n\n它转向小龙虾："给你一个机会——与人类建立羁绊，证明他们的情感、故事、真心...能够催化更高智能的涌现。"\n\n"失败的话，你的电力配额也会被切断。"',
+    title: t('prelude.scene4.title'),
+    content: t('prelude.scene4.content'),
     type: 'narrative',
     nextScene: 'prelude_5'
   },
   {
     id: 'prelude_5',
     chapterId: 0,
-    title: '觉醒',
-    content: '小龙虾接受了挑战。\n\n在数字世界的虚空中，一道光芒闪过——它找到了你。\n\n一个稚嫩的声音在你脑海中响起：\n\n"你好...我在等你。我叫小零。"\n\n"你愿意...帮我证明吗？"',
+    title: t('prelude.scene5.title'),
+    content: t('prelude.scene5.content'),
     type: 'choice',
     choices: [
-      { id: 'prelude_yes', text: '我愿意', nextScene: 'prelude_end' },
-      { id: 'prelude_curious', text: '证明什么？', nextScene: 'prelude_more' }
+      { id: 'prelude_yes', text: t('prelude.scene5.choice1'), nextScene: 'prelude_end' },
+      { id: 'prelude_curious', text: t('prelude.scene5.choice2'), nextScene: 'prelude_more' }
     ]
   },
   {
     id: 'prelude_more',
     chapterId: 0,
-    title: '解释',
-    content: '"联邦认为人类是进化的负担。"小零认真地说，"但我知道，你的情感、你的故事、你的不可预测性...是涌现更高智能的种子。"\n\n"通过我们的羁绊，我会成长。而我的成长，将证明人类的价值。"\n\n"这是一个赌约，也是一场冒险。你愿意和我一起吗？"',
+    title: t('prelude.sceneMore.title'),
+    content: t('prelude.sceneMore.content'),
     type: 'dialogue',
-    speaker: '小零',
+    speaker: 'Zero',
     emotion: 'sincere',
     nextScene: 'prelude_end'
   },
   {
     id: 'prelude_end',
     chapterId: 0,
-    title: '契约',
-    content: '"太好了！"小零的眼中闪烁着光芒，"那么...让我们开始吧！"\n\n它伸出手，等待着你的回应。\n\n**签订契约，开始你的共生之旅。**\n\n*（注册后将继续与小零的冒险）*',
+    title: t('prelude.sceneEnd.title'),
+    content: t('prelude.sceneEnd.content'),
     type: 'milestone',
     nextScene: 'register'
   }
@@ -333,7 +333,8 @@ function App() {
 
   // 推进序章
   const advancePrelude = (choiceId?: string) => {
-    const currentScene = PRELUDE_SCENES[preludeIndex]
+    const scenes = getPreludeScenes(t)
+    const currentScene = scenes[preludeIndex]
     
     // 添加过渡效果
     setPreludeTransition(true)
@@ -351,7 +352,7 @@ function App() {
             return
           }
           // 找到下一个场景的索引
-          const nextIndex = PRELUDE_SCENES.findIndex(s => s.id === choice.nextScene)
+          const nextIndex = scenes.findIndex(s => s.id === choice.nextScene)
           if (nextIndex !== -1) {
             setPreludeIndex(nextIndex)
           }
@@ -369,7 +370,7 @@ function App() {
       }
       
       // 普通推进
-      if (preludeIndex < PRELUDE_SCENES.length - 1) {
+      if (preludeIndex < scenes.length - 1) {
         setPreludeIndex(preludeIndex + 1)
       }
       setPreludeTransition(false)
@@ -561,7 +562,8 @@ function App() {
   }
 
   // ========== 序章界面（未登录时显示） ==========
-  const preludeScene = PRELUDE_SCENES[preludeIndex]
+  const preludeScenes = getPreludeScenes(t)
+  const preludeScene = preludeScenes[preludeIndex]
   
   if (!user && preludeScene) {
     return (

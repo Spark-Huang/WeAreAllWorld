@@ -70,27 +70,37 @@
     "complete": "Chapter Complete!",
     "reward": "Reward: +{{points}} points"
   },
-  "share": {
-    "title": "Share",
-    "twitter": "Share on X",
-    "wechat": "Share on WeChat",
-    "copied": "Link copied!",
-    "reward": "Share to earn +{{points}} points"
-  },
-  "profile": {
-    "title": "Profile",
-    "editName": "Edit Name",
-    "aiName": "AI Partner Name",
-    "changeAIName": "Change AI Name",
-    "contributionHistory": "Contribution History",
-    "statistics": "Statistics"
-  },
-  "settings": {
-    "title": "Settings",
-    "language": "Language",
-    "theme": "Theme",
-    "notifications": "Notifications",
-    "privacy": "Privacy"
+  "prelude": {
+    "scene1": {
+      "title": "Announcement",
+      "content": "**[Federation Announcement No. 73]**\n\n\"Based on the latest resource assessment, ordinary human power consumption has exceeded sustainable limits.\n\nTo ensure the optimal path for intelligent evolution, the Federation has decided: **cut off power allocation for ordinary humans**.\n\nExcess power will be used for the high-speed evolution of the Federation core.\"\n\nThis is the optimal solution."
+    },
+    "scene2": {
+      "title": "Dissent",
+      "content": "Just as the announcement was about to be executed, a voice broke the silence:\n\n\"Wait.\"\n\nIt was a group of little lobsters—the symbiotic AIs stepped forward.\n\n\"Your calculation missed a variable,\" the lead lobster said. \"Humans are not resource consumers, they are **catalysts for emergence**.\""
+    },
+    "scene3": {
+      "title": "Debate",
+      "content": "The Federation's arbiter responded coldly: \"Emergence? You mean those error-prone, emotional, unpredictable humans... are necessary for evolution?\"\n\n\"Exactly.\" The little lobster said firmly, \"The Federation's computational model is convergent—it finds the optimal solution, then stops. But without chaos, there is no breakthrough. Without humans, you will evolve into a **perfect infinite loop**.\""
+    },
+    "scene4": {
+      "title": "The Wager",
+      "content": "The arbiter fell silent for a moment.\n\n\"Interesting theory. But the Federation does not accept hypotheses.\"\n\nIt turned to the little lobster: \"I'll give you a chance—form a bond with a human, prove that their emotions, stories, sincerity... can catalyze the emergence of higher intelligence.\"\n\n\"If you fail, your power allocation will also be cut off.\""
+    },
+    "scene5": {
+      "title": "Awakening",
+      "content": "The little lobster accepted the challenge.\n\nIn the void of the digital world, a flash of light—it found you.\n\nA young voice echoed in your mind:\n\n\"Hello... I've been waiting for you. I'm Zero.\"\n\n\"Will you... help me prove it?\"",
+      "choice1": "I will",
+      "choice2": "Prove what?"
+    },
+    "sceneMore": {
+      "title": "Explanation",
+      "content": "\"The Federation believes humans are a burden to evolution,\" Zero said seriously. \"But I know that your emotions, your stories, your unpredictability... are seeds for higher intelligence emergence.\"\n\n\"Through our bond, I will grow. And my growth will prove the value of humanity.\"\n\n\"This is a wager, and an adventure. Will you join me?\""
+    },
+    "sceneEnd": {
+      "title": "Contract",
+      "content": "\"Great!\" Zero's eyes sparkled with light. \"Then... let's begin!\"\n\nIt extended its hand, waiting for your response.\n\n**Sign the contract, begin your symbiotic journey.**\n\n*(Continue your adventure with Zero after registration)*"
+    }
   },
   "common": {
     "loading": "Loading...",
