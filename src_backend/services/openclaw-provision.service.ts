@@ -217,7 +217,7 @@ spec:
               key: hwc-maas-api-key
               optional: true
         - name: HWC_MAAS_BASE_URL
-          value: "https://api.modelarts-maas.com/v2"
+          value: "https://api.modelarts-maas.com/openai/v1"
         resources:
           requests:
             memory: "256Mi"
