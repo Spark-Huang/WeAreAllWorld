@@ -2,9 +2,9 @@
  * 对话路由
  * 
  * 设计：
- * 1. 对话时快速响应，只记录消息和快速判定
- * 2. 每15分钟批量 LLM 评估，补偿贡献值差异
- * 3. 集成 New API 网关进行 Token 计费
+ * 1. 优先转发到用户的专属 OpenClaw Pod
+ * 2. 如果没有专属 Pod，使用共享 LLM 服务
+ * 3. 记录消息和质量判定
  */
 
 import { Router, Request, Response } from 'express';
@@ -13,6 +13,7 @@ import { qualityJudgeService } from '../../contribution-evaluation/services/qual
 import { asyncQualityEvaluationService } from '../../contribution-evaluation/services/async-quality-evaluation.service';
 import { LLMService } from '../../services/llm.service';
 import { getNewApiService } from '../../services/new-api.service';
+import { getOpenClawProvisionService } from '../../services/openclaw-provision.service';
 import { quotaCheckMiddleware } from '../middleware/quota-check.middleware';
 
 const router: Router = Router();
@@ -32,7 +33,10 @@ const userSessions = new Map<string, { sessionId: string; lastActivity: number }
  * POST /api/v1/dialogue
  * 发送对话消息并获取AI回复
  * 
- * 添加额度检查中间件
+ * 优先级：
+ * 1. 用户专属 OpenClaw Pod
+ * 2. 共享 OpenClaw Pod
+ * 3. 后备 LLM 服务
  */
 router.post('/', quotaCheckMiddleware(1000), async (req: Request, res: Response) => {
   try {
@@ -49,7 +53,59 @@ router.post('/', quotaCheckMiddleware(1000), async (req: Request, res: Response)
       return;
     }
     
-    // 1. 获取用户和AI伙伴信息
+    // 1. 检查用户是否有专属 OpenClaw Pod
+    const openclawService = getOpenClawProvisionService();
+    let openclawEndpoint: string | null = null;
+    
+    if (openclawService) {
+      const instance = await openclawService.getInstance(userId);
+      if (instance && instance.status === 'running') {
+        // 使用 Pod 内部地址
+        openclawEndpoint = `http://${instance.podName}.${instance.namespace}:3000`;
+        console.log(`[对话] 用户 ${userId} 使用专属 Pod: ${instance.podName}`);
+      }
+    }
+    
+    // 2. 如果有专属 Pod，转发请求
+    if (openclawEndpoint) {
+      try {
+        const response = await fetch(`${openclawEndpoint}/api/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-ID': userId
+          },
+          body: JSON.stringify({ message })
+        });
+        
+        if (response.ok) {
+          const data = await response.json() as { reply?: string; response?: string; message?: string };
+          
+          // 记录消息到数据库
+          await recordMessage(userId, message, data.reply || data.response || '');
+          
+          // 快速质量判定
+          const quickResult = qualityJudgeService.calculateQuality(message);
+          
+          return res.json({
+            success: true,
+            data: {
+              aiReply: data.reply || data.response || data.message,
+              qualityResult: quickResult,
+              source: 'dedicated-openclaw',
+              podName: openclawEndpoint.split('/')[2]
+            }
+          });
+        }
+      } catch (err) {
+        console.warn(`[对话] 专属 Pod 请求失败，使用后备:`, err);
+      }
+    }
+    
+    // 3. 后备：使用现有的 LLM 服务
+    console.log(`[对话] 用户 ${userId} 使用后备 LLM 服务`);
+    
+    // 获取用户和AI伙伴信息
     const { data: userData } = await supabase
       .from('users')
       .select('telegram_username')
@@ -67,13 +123,13 @@ router.post('/', quotaCheckMiddleware(1000), async (req: Request, res: Response)
       return;
     }
     
-    // 2. 快速质量判定（关键词匹配）
+    // 快速质量判定
     const quickResult = qualityJudgeService.calculateQuality(message);
     
-    // 3. 获取或创建会话
+    // 获取或创建会话
     const sessionId = await getOrCreateSession(userId);
     
-    // 4. 生成AI回复
+    // 生成AI回复
     const growthStage = getGrowthStage(partner.total_contribution);
     let aiReply = '';
     
@@ -305,6 +361,30 @@ function getFallbackReply(qualityType: string): string {
   
   const options = replies[qualityType] || replies.daily;
   return options[Math.floor(Math.random() * options.length)];
+}
+
+/**
+ * 记录消息到数据库
+ */
+async function recordMessage(userId: string, message: string, reply: string): Promise<void> {
+  try {
+    const sessionId = await getOrCreateSession(userId);
+    
+    // 记录用户消息
+    await supabase
+      .from('interaction_logs')
+      .insert({
+        user_id: userId,
+        session_id: sessionId,
+        raw_message: message,
+        raw_reply: reply,
+        category: 'dialogue',
+        granted_power: 0,
+        data_rarity: '普通数据'
+      });
+  } catch (err) {
+    console.error('记录消息失败:', err);
+  }
 }
 
 export { router as dialogueRouter };
