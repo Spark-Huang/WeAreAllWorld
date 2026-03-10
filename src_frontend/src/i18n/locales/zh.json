@@ -1,0 +1,45 @@
+{
+  "brand": {
+    "name": "大同世界",
+    "tagline": "人机共生，命运与共"
+  },
+  "nav": {
+    "home": "首页",
+    "chat": "对话",
+    "profile": "个人中心",
+    "settings": "设置",
+    "logout": "退出登录"
+  },
+  "auth": {
+    "login": "登录",
+    "register": "注册",
+    "email": "邮箱",
+    "password": "密码"
+  },
+  "ai": {
+    "partner": "AI伙伴",
+    "status": {
+      "active": "活跃",
+      "hibernating": "休眠中"
+    },
+    "contribution": "贡献值"
+  },
+  "chat": {
+    "placeholder": "输入消息...",
+    "send": "发送",
+    "thinking": "思考中...",
+    "noMessages": "开始对话吧！"
+  },
+  "checkin": {
+    "title": "每日签到",
+    "checkin": "签到",
+    "checkedIn": "今日已签到"
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "出错了",
+    "retry": "重试",
+    "cancel": "取消",
+    "confirm": "确认"
+  }
+}

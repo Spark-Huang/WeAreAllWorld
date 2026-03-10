@@ -1,0 +1,45 @@
+{
+  "brand": {
+    "name": "Great Unity World",
+    "tagline": "Human-AI Symbiosis, One Shared Destiny"
+  },
+  "nav": {
+    "home": "Home",
+    "chat": "Chat",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password"
+  },
+  "ai": {
+    "partner": "AI Partner",
+    "status": {
+      "active": "Active",
+      "hibernating": "Hibernating"
+    },
+    "contribution": "Contribution"
+  },
+  "chat": {
+    "placeholder": "Type your message...",
+    "send": "Send",
+    "thinking": "Thinking...",
+    "noMessages": "Start your conversation!"
+  },
+  "checkin": {
+    "title": "Daily Check-in",
+    "checkin": "Check in",
+    "checkedIn": "Already checked in today"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  }
+}

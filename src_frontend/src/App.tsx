@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './lib/supabase'
 import type { User, Session } from '@supabase/supabase-js'
-import { AdminPanel } from './Admin'
+// import { AdminPanel } from './Admin'  // Temporarily disabled
 
 // API 基础地址
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
