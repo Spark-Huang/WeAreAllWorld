@@ -186,7 +186,7 @@ spec:
       - name: main
         image: ${this.baseImage}
         ports:
-        - containerPort: 3000
+        - containerPort: 18789
         env:
         - name: USER_ID
           value: "${userId}"
@@ -195,7 +195,7 @@ spec:
         - name: GATEWAY__CONTROLUI__DANGEROUSLYALLOWHOSTHEADERORIGIN
           value: "true"
         - name: GATEWAY__PORT
-          value: "3000"
+          value: "18789"
         resources:
           requests:
             memory: "256Mi"
@@ -213,7 +213,7 @@ spec:
   selector:
     app: ${podName}
   ports:
-  - port: 3000
+  - port: 18789
     targetPort: 18789
   type: ClusterIP
 `;
