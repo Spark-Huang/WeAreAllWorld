@@ -22,6 +22,7 @@ import { adminRouter } from './routes/admin.routes';
 import { storyRouter } from './routes/story.routes';
 import newApiRouter from './routes/new-api.routes';
 import openclawRouter from './routes/openclaw.routes';
+import { socialShareRouter } from './routes/social-share.routes';
 
 // 服务
 import { asyncQualityEvaluationService } from '../contribution-evaluation/services/async-quality-evaluation.service';
@@ -118,6 +119,7 @@ app.use(`${API_PREFIX}/bot-key`, authMiddleware, botKeyRouter);
 app.use(`${API_PREFIX}/story`, authMiddleware, storyRouter);
 app.use(`${API_PREFIX}/new-api`, authMiddleware, newApiRouter);
 app.use(`${API_PREFIX}/openclaw`, authMiddleware, openclawRouter);
+app.use(`${API_PREFIX}/share`, authMiddleware, socialShareRouter);
 
 // 管理员路由（需要 Admin API Key）
 app.use(`${API_PREFIX}/admin`, adminRouter);
