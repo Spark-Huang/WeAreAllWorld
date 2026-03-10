@@ -14,32 +14,103 @@
     "login": "Login",
     "register": "Register",
     "email": "Email",
-    "password": "Password"
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "loginSuccess": "Login successful!",
+    "registerSuccess": "Registration successful! Please check your email to verify.",
+    "loginFailed": "Login failed",
+    "registerFailed": "Registration failed"
   },
   "ai": {
     "partner": "AI Partner",
     "status": {
       "active": "Active",
-      "hibernating": "Hibernating"
+      "hibernating": "Hibernating",
+      "awakening": "Awakening"
     },
-    "contribution": "Contribution"
+    "contribution": "Points",
+    "level": "Level",
+    "title": {
+      "stranger": "Stranger",
+      "acquaintance": "Acquaintance",
+      "friend": "Kindred Spirit",
+      "soulmate": "Soulmate",
+      "destiny": "Destiny Partner"
+    }
   },
   "chat": {
     "placeholder": "Type your message...",
     "send": "Send",
     "thinking": "Thinking...",
-    "noMessages": "Start your conversation!"
+    "noMessages": "Start your conversation with your AI partner!",
+    "memory": "Memory",
+    "contributionEarned": "Points earned"
   },
   "checkin": {
     "title": "Daily Check-in",
     "checkin": "Check in",
-    "checkedIn": "Already checked in today"
+    "checkedIn": "Already checked in today",
+    "checkinFailed": "Check-in failed",
+    "reward": "Reward: +{{points}} points",
+    "streak": "{{days}} day streak",
+    "bonus": "Streak Bonus: +{{points}}"
+  },
+  "milestone": {
+    "title": "Milestones",
+    "unlocked": "Unlocked",
+    "locked": "Locked at {{points}} points",
+    "reward": "Reward: {{reward}}"
+  },
+  "story": {
+    "continue": "Story",
+    "chapter": "Chapter {{number}}: {{title}}",
+    "complete": "Chapter Complete!",
+    "reward": "Reward: +{{points}} points"
+  },
+  "share": {
+    "title": "Share",
+    "twitter": "Share on X",
+    "wechat": "Share on WeChat",
+    "copied": "Link copied!",
+    "reward": "Share to earn +{{points}} points"
+  },
+  "profile": {
+    "title": "Profile",
+    "editName": "Edit Name",
+    "aiName": "AI Partner Name",
+    "changeAIName": "Change AI Name",
+    "contributionHistory": "Contribution History",
+    "statistics": "Statistics"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "notifications": "Notifications",
+    "privacy": "Privacy"
   },
   "common": {
     "loading": "Loading...",
-    "error": "Error",
+    "error": "Something went wrong",
     "retry": "Retry",
     "cancel": "Cancel",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done"
+  },
+  "errors": {
+    "networkError": "Network error. Please check your connection.",
+    "sessionExpired": "Session expired. Please login again.",
+    "notFound": "Not found",
+    "unauthorized": "Unauthorized access",
+    "serverError": "Server error. Please try again later."
   }
 }

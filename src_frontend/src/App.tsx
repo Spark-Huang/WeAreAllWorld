@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from './lib/supabase'
 import type { User, Session } from '@supabase/supabase-js'
+import { LanguageSwitcher } from './components/LanguageSwitcher'
 // import { AdminPanel } from './Admin'  // Temporarily disabled
 
 // API 基础地址
@@ -119,6 +121,7 @@ const PRELUDE_SCENES: StoryScene[] = [
 ]
 
 function App() {
+  const { t } = useTranslation()
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [partner, setPartner] = useState<AIPartner | null>(null)
@@ -391,11 +394,11 @@ function App() {
       
       // 检查是否需要邮箱验证
       if (data.user && !data.session) {
-        alert('注册成功！请查收邮箱验证邮件，验证后即可登录。')
+        alert(t('auth.registerSuccess'))
         setAuthMode('login')
       }
     } catch (err: any) {
-      alert(err.message || '注册失败')
+      alert(err.message || t('auth.registerFailed'))
     } finally {
       setAuthLoading(false)
     }
@@ -412,7 +415,7 @@ function App() {
       })
       if (error) throw error
     } catch (err: any) {
-      alert(err.message || '登录失败')
+      alert(err.message || t('auth.loginFailed'))
     } finally {
       setAuthLoading(false)
     }
@@ -484,7 +487,7 @@ function App() {
     }
   }
 
-  // 签到
+  // Check in
   const handleCheckin = async () => {
     if (!session) return
     try {
@@ -498,12 +501,12 @@ function App() {
       if (data.success) {
         setChatHistory(prev => [...prev, {
           role: 'assistant',
-          content: '签到成功！今天也要元气满满哦～ 🎉',
+          content: 'Check in成功！今天也要元气满满哦～ 🎉',
           timestamp: new Date()
         }])
         await loadPartner(session)
       } else {
-        alert(data.message || data.data?.message || '签到失败')
+        alert(data.message || data.data?.message || t('checkin.checkinFailed'))
       }
     } catch (err) {
       console.error('Checkin failed:', err)
@@ -828,29 +831,30 @@ function App() {
       {/* 顶部导航 */}
       <header className="gradient-bg text-white p-4 sticky top-0 z-10">
         <div className="max-w-lg mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-bold">🌍 天下一家</h1>
+          <h1 className="text-xl font-bold">🌍 {t('brand.name')}</h1>
           <div className="flex items-center gap-2">
-            <span className="text-sm opacity-80">{partner?.total_contribution || 0} 点</span>
+            <LanguageSwitcher />
+            <span className="text-sm opacity-80">{partner?.total_contribution || 0} {t('ai.contribution')}</span>
             {/* 剧情按钮 */}
             {storyData && !storyData.progress.completedChapters.includes(5) && (
               <button 
                 onClick={() => setShowStory(true)}
                 className="bg-white/20 px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition"
               >
-                📖 剧情
+                📖 {t('story.continue')}
               </button>
             )}
             <button 
               onClick={handleCheckin}
               className="bg-white/20 px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition"
             >
-              签到
+              Check in
             </button>
             <button 
               onClick={handleLogout}
               className="bg-white/10 px-3 py-1 rounded-lg text-sm hover:bg-white/20 transition"
             >
-              退出
+              Logout
             </button>
           </div>
         </div>
