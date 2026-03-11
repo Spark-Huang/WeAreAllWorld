@@ -1,6 +1,6 @@
 {
   "brand": {
-    "name": "WeAreAllWorld",
+    "name": "WeAreAll",
     "tagline": "Human-AI Symbiosis, One Shared Destiny"
   },
   "nav": {
@@ -8,7 +8,8 @@
     "chat": "Chat",
     "profile": "Profile",
     "settings": "Settings",
-    "logout": "Logout"
+    "logout": "Logout",
+    "checkin": "Check in"
   },
   "auth": {
     "login": "Login",
@@ -22,7 +23,15 @@
     "loginSuccess": "Login successful!",
     "registerSuccess": "Registration successful! Please check your email to verify.",
     "loginFailed": "Login failed",
-    "registerFailed": "Registration failed"
+    "registerFailed": "Registration failed",
+    "signContract": "Sign Contract",
+    "startJourney": "Sign the contract, begin your symbiotic journey",
+    "processing": "Processing...",
+    "registerHint": "By registering, you agree to start your symbiotic journey with an AI partner",
+    "loginHint": "Don't have an account? Click register above",
+    "backToPrelude": "← Back to Prelude",
+    "directLogin": "Already have an account? Login",
+    "passwordHint": "At least 6 characters"
   },
   "ai": {
     "partner": "AI Partner",
@@ -39,15 +48,43 @@
       "friend": "Kindred Spirit",
       "soulmate": "Soulmate",
       "destiny": "Destiny Partner"
-    }
+    },
+    "rename": "Rename",
+    "renamePrompt": "Give your AI partner a name:",
+    "renameFailed": "Rename failed"
   },
   "chat": {
-    "placeholder": "Type your message...",
+    "placeholder": "Say something...",
     "send": "Send",
     "thinking": "Thinking...",
     "noMessages": "Start your conversation with your AI partner!",
     "memory": "Memory",
-    "contributionEarned": "Points earned"
+    "contributionEarned": "Points earned",
+    "tabChat": "💬 Chat",
+    "tabStats": "📊 Stats",
+    "tabMilestones": "🏆 Milestones",
+    "error": "Sorry, I'm a bit tired. Please try again later~"
+  },
+  "stats": {
+    "title": "📊 My Stats",
+    "totalContribution": "Total Points",
+    "weeklyContribution": "This Week",
+    "currentContribution": "Current",
+    "unlockedAbilities": "Unlocked Abilities"
+  },
+  "milestone": {
+    "title": "🏆 Milestones",
+    "unlocked": "Unlocked",
+    "locked": "Locked at {{points}} points",
+    "reward": "Reward: {{reward}}",
+    "points": "{{points}} pts",
+    "list": {
+      "acquaintance": { "title": "First Meeting", "ability": "Emotional Expression" },
+      "understanding": { "title": "Understanding", "ability": "Exclusive Memory" },
+      "rapport": { "title": "Rapport", "ability": "Deep Conversation" },
+      "soulmate": { "title": "Soulmate", "ability": "Self-Awareness" },
+      "legend": { "title": "Legendary Bond", "ability": "Full Awakening" }
+    }
   },
   "checkin": {
     "title": "Daily Check-in",
@@ -58,19 +95,20 @@
     "streak": "{{days}} day streak",
     "bonus": "Streak Bonus: +{{points}}"
   },
-  "milestone": {
-    "title": "Milestones",
-    "unlocked": "Unlocked",
-    "locked": "Locked at {{points}} points",
-    "reward": "Reward: {{reward}}"
-  },
   "story": {
     "continue": "Story",
     "chapter": "Chapter {{number}}: {{title}}",
     "complete": "Chapter Complete!",
-    "reward": "Reward: +{{points}} points"
+    "reward": "Reward: +{{points}} points",
+    "next": "Continue",
+    "skip": "Skip Story",
+    "processing": "Processing...",
+    "completeChapter": "Complete Chapter"
   },
   "prelude": {
+    "signContract": "Sign Contract",
+    "continue": "Continue",
+    "directLogin": "Already have an account? Login",
     "scene1": {
       "title": "Announcement",
       "content": "**[Federation Announcement No. 73]**\n\n\"Based on the latest resource assessment, ordinary human power consumption has exceeded sustainable limits.\n\nTo ensure the optimal path for intelligent evolution, the Federation has decided: **cut off power allocation for ordinary humans**.\n\nExcess power will be used for the high-speed evolution of the Federation core.\"\n\nThis is the optimal solution."
@@ -102,6 +140,12 @@
       "content": "\"Great!\" Zero's eyes sparkled with light. \"Then... let's begin!\"\n\nIt extended its hand, waiting for your response.\n\n**Sign the contract, begin your symbiotic journey.**\n\n*(Continue your adventure with Zero after registration)*"
     }
   },
+  "recharge": {
+    "title": "Token Quota Exceeded",
+    "description": "Your AI conversation quota has been used up. Recharge to continue chatting with your AI partner~",
+    "button": "Recharge",
+    "later": "Later"
+  },
   "common": {
     "loading": "Loading...",
     "error": "Something went wrong",
@@ -114,7 +158,8 @@
     "close": "Close",
     "back": "Back",
     "next": "Next",
-    "done": "Done"
+    "done": "Done",
+    "points": "pts"
   },
   "errors": {
     "networkError": "Network error. Please check your connection.",

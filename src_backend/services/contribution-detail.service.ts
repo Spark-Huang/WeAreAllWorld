@@ -5,7 +5,7 @@
  * 目的：让用户看到自己数据的价值
  */
 
-import { supabase } from '../api/config/supabase.js'
+import { supabase } from '../api/index.js'
 
 export interface ContributionDetail {
   dialogueId: string

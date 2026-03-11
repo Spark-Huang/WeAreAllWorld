@@ -8,7 +8,7 @@
  */
 
 import { Router, Request, Response } from 'express'
-import { supabase } from '../config/supabase.js'
+import { supabase } from '../index.js'
 import { randomUUID } from 'crypto'
 
 const router = Router()

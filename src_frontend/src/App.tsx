@@ -121,7 +121,7 @@ const getPreludeScenes = (t: (key: string) => string): StoryScene[] => [
 ]
 
 function App() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [partner, setPartner] = useState<AIPartner | null>(null)
@@ -143,6 +143,9 @@ function App() {
   const [storyData, setStoryData] = useState<StoryData | null>(null)
   const [showStory, setShowStory] = useState(false)
   const [storyLoading, setStoryLoading] = useState(false)
+  const [storyTransition, setStoryTransition] = useState(false)
+  const [chapterScenes, setChapterScenes] = useState<StoryScene[]>([]) // 缓存章节场景
+  const [pendingChoices, setPendingChoices] = useState<{ sceneId: string; choiceId: string }[]>([]) // 待提交的选择
   
   // 充值弹窗状态
   const [showRechargeModal, setShowRechargeModal] = useState(false)
@@ -275,6 +278,10 @@ function App() {
       const data = await res.json()
       if (data.success) {
         setStoryData(data.data)
+        // 缓存章节场景数据
+        if (data.data.chapterScenes) {
+          setChapterScenes(data.data.chapterScenes)
+        }
         // 如果第一章未完成，自动显示剧情
         const completedChapters = data.data.progress.completedChapters || []
         if (!completedChapters.includes(1)) {
@@ -288,47 +295,91 @@ function App() {
     }
   }
 
-  // 推进剧情
+  // 推进剧情（本地推进，章节结束时才调用 API）
   const advanceStory = async (choiceId?: string) => {
-    if (!session) return
-    try {
-      setStoryLoading(true)
-      const res = await fetch(`${API_BASE}/story/advance`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ choiceId })
-      })
-      const data = await res.json()
-      if (data.success) {
-        // 如果有奖励，刷新伙伴数据
-        if (data.data.reward) {
-          await loadPartner(session)
+    if (!session || !storyData) return
+    
+    const currentScene = storyData.currentScene
+    
+    // 添加过渡效果
+    setStoryTransition(true)
+    
+    setTimeout(async () => {
+      let nextSceneId: string | undefined
+      let reward = 0
+      
+      // 处理选择
+      if (currentScene.type === 'choice' && choiceId) {
+        const choice = currentScene.choices?.find(c => c.id === choiceId)
+        if (choice) {
+          nextSceneId = choice.nextScene
+          reward = choice.contributionBonus || 0
+          // 记录选择
+          setPendingChoices(prev => [...prev, { sceneId: currentScene.id, choiceId }])
         }
-        // 如果有下一场景，更新剧情数据
-        if (data.data.nextScene) {
+      } else {
+        nextSceneId = currentScene.nextScene
+        reward = currentScene.reward || 0
+      }
+      
+      // 检查是否章节完成
+      if (currentScene.type === 'milestone') {
+        // 章节完成，调用 API 保存进度
+        try {
+          setStoryLoading(true)
+          const res = await fetch(`${API_BASE}/story/advance`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ 
+              choiceId,
+              pendingChoices: pendingChoices // 提交所有待提交的选择
+            })
+          })
+          const data = await res.json()
+          if (data.success) {
+            // 刷新伙伴数据
+            await loadPartner(session)
+            // 清空待提交的选择
+            setPendingChoices([])
+            // 如果有下一章，加载下一章的场景
+            if (data.data.nextScene) {
+              // 重新加载剧情获取下一章的场景数据
+              loadStory(session)
+            } else {
+              // 没有下一场景，关闭剧情界面
+              setShowStory(false)
+              loadStory(session)
+            }
+          }
+        } catch (err) {
+          console.error('Advance story failed:', err)
+        } finally {
+          setStoryLoading(false)
+          setStoryTransition(false)
+        }
+        return
+      }
+      
+      // 本地推进到下一场景
+      if (nextSceneId) {
+        const nextScene = chapterScenes.find(s => s.id === nextSceneId)
+        if (nextScene) {
           setStoryData(prev => prev ? {
             ...prev,
-            currentScene: data.data.nextScene,
+            currentScene: nextScene,
             progress: {
               ...prev.progress,
-              totalRewards: (prev.progress.totalRewards || 0) + (data.data.reward || 0)
+              totalRewards: (prev.progress.totalRewards || 0) + reward
             }
           } : null)
-        } else {
-          // 没有下一场景，关闭剧情界面
-          setShowStory(false)
-          // 重新加载剧情获取最新状态
-          loadStory(session)
         }
       }
-    } catch (err) {
-      console.error('Advance story failed:', err)
-    } finally {
-      setStoryLoading(false)
-    }
+      
+      setStoryTransition(false)
+    }, 150) // 150ms 过渡
   }
 
   // 推进序章
@@ -480,7 +531,7 @@ function App() {
       console.error('Send failed:', err)
       setChatHistory(prev => [...prev, {
         role: 'assistant',
-        content: '抱歉，我好像有点累了，请稍后再试试～',
+        content: t('chat.error'),
         timestamp: new Date()
       }])
     } finally {
@@ -535,7 +586,7 @@ function App() {
         }])
         await loadPartner(session)
       } else {
-        alert(data.error || '改名失败')
+        alert(data.error || t('ai.renameFailed'))
       }
     } catch (err) {
       console.error('Rename failed:', err)
@@ -568,6 +619,16 @@ function App() {
   if (!user && preludeScene) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+        {/* 语言切换按钮 */}
+        <div className="absolute top-4 right-4">
+          <button
+            onClick={() => i18n.changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
+            className="px-3 py-1.5 bg-white/80 backdrop-blur rounded-full text-sm font-medium text-gray-600 hover:bg-white transition shadow-sm"
+          >
+            {i18n.language === 'zh' ? 'EN' : '中文'}
+          </button>
+        </div>
+        
         <div className={`card max-w-md w-full transition-opacity duration-150 ${preludeTransition ? 'opacity-50' : 'opacity-100'}`}>
           {/* 场景标题 */}
           <div className="text-center mb-4">
@@ -615,7 +676,7 @@ function App() {
               onClick={() => advancePrelude()}
               className="btn-primary w-full"
             >
-              {preludeScene.nextScene === 'register' ? '签订契约' : '继续'}
+              {preludeScene.nextScene === 'register' ? t('prelude.signContract') : t('prelude.continue')}
             </button>
           )}
           
@@ -624,7 +685,7 @@ function App() {
             onClick={() => setPreludeIndex(-1)}
             className="w-full mt-4 text-sm text-gray-400 hover:text-gray-600 transition"
           >
-            已有账号？直接登录
+            {t('prelude.directLogin')}
           </button>
         </div>
       </div>
@@ -635,11 +696,21 @@ function App() {
   if (!user) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+        {/* 语言切换按钮 */}
+        <div className="absolute top-4 right-4">
+          <button
+            onClick={() => i18n.changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
+            className="px-3 py-1.5 bg-white/80 backdrop-blur rounded-full text-sm font-medium text-gray-600 hover:bg-white transition shadow-sm"
+          >
+            {i18n.language === 'zh' ? 'EN' : '中文'}
+          </button>
+        </div>
+        
         <div className="card max-w-md w-full">
           <div className="text-center mb-6">
             <div className="text-6xl mb-4">🌍</div>
-            <h1 className="text-3xl font-bold mb-2">大同世界</h1>
-            <p className="text-gray-500">签订契约，开始共生之旅</p>
+            <h1 className="text-3xl font-bold mb-2">{t('brand.name')}</h1>
+            <p className="text-gray-500">{t('auth.startJourney')}</p>
           </div>
           
           {/* 切换登录/注册 */}
@@ -652,7 +723,7 @@ function App() {
                   : 'text-gray-500'
               }`}
             >
-              注册
+              {t('auth.register')}
             </button>
             <button
               onClick={() => setAuthMode('login')}
@@ -662,13 +733,13 @@ function App() {
                   : 'text-gray-500'
               }`}
             >
-              登录
+              {t('auth.login')}
             </button>
           </div>
           
           <form onSubmit={authMode === 'register' ? handleRegister : handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.email')}</label>
               <input
                 type="email"
                 value={email}
@@ -679,12 +750,12 @@ function App() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">密码</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.password')}</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="至少6位"
+                placeholder={t('auth.passwordHint')}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
                 minLength={6}
                 required
@@ -695,14 +766,14 @@ function App() {
               disabled={authLoading}
               className="btn-primary w-full disabled:opacity-50"
             >
-              {authLoading ? '处理中...' : (authMode === 'register' ? '签订契约' : '登录')}
+              {authLoading ? t('auth.processing') : (authMode === 'register' ? t('auth.signContract') : t('auth.login'))}
             </button>
           </form>
           
           <p className="text-center text-gray-500 text-sm mt-6">
             {authMode === 'register' 
-              ? '注册即表示同意开始与AI伙伴的共生之旅' 
-              : '还没有账号？点击上方注册'}
+              ? t('auth.registerHint') 
+              : t('auth.loginHint')}
           </p>
           
           {/* 返回序章 */}
@@ -710,7 +781,7 @@ function App() {
             onClick={() => setPreludeIndex(0)}
             className="w-full mt-4 text-sm text-gray-400 hover:text-gray-600 transition"
           >
-            ← 返回序章
+            {t('auth.backToPrelude')}
           </button>
         </div>
       </div>
@@ -724,7 +795,7 @@ function App() {
   if (showStory && scene) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
-        <div className="card max-w-md w-full">
+        <div className={`card max-w-md w-full transition-opacity duration-150 ${storyTransition ? 'opacity-50' : 'opacity-100'}`}>
           {/* 章节标题 */}
           <div className="text-center mb-4">
             <span className="text-sm text-primary-500 font-medium">
@@ -764,7 +835,7 @@ function App() {
                 >
                   <span className="text-gray-700">{choice.text}</span>
                   {choice.contributionBonus && (
-                    <span className="text-xs text-primary-500 ml-2">+{choice.contributionBonus}点</span>
+                    <span className="text-xs text-primary-500 ml-2">+{choice.contributionBonus}{t('common.points')}</span>
                   )}
                 </button>
               ))}
@@ -778,8 +849,8 @@ function App() {
               disabled={storyLoading}
               className="btn-primary w-full disabled:opacity-50"
             >
-              {storyLoading ? '处理中...' : 
-                scene.type === 'milestone' ? '完成章节' : '继续'}
+              {storyLoading ? t('story.processing') : 
+                scene.type === 'milestone' ? t('story.completeChapter') : t('story.next')}
             </button>
           )}
           
@@ -788,7 +859,7 @@ function App() {
             onClick={() => setShowStory(false)}
             className="w-full mt-2 text-sm text-gray-400 hover:text-gray-600 transition"
           >
-            跳过剧情
+            {t('story.skip')}
           </button>
         </div>
       </div>
@@ -800,9 +871,9 @@ function App() {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center">
         <div className="text-5xl mb-4">🔋</div>
-        <h3 className="text-xl font-bold text-gray-800 mb-2">Token 额度不足</h3>
+        <h3 className="text-xl font-bold text-gray-800 mb-2">{t('recharge.title')}</h3>
         <p className="text-gray-500 mb-6">
-          你的 AI 对话额度已用完，充值后可继续与 AI 伙伴聊天～
+          {t('recharge.description')}
         </p>
         <div className="space-y-3">
           <a
@@ -811,13 +882,13 @@ function App() {
             rel="noopener noreferrer"
             className="btn-primary block w-full"
           >
-            前往充值
+            {t('recharge.button')}
           </a>
           <button
             onClick={() => setShowRechargeModal(false)}
             className="w-full py-3 text-gray-500 hover:text-gray-700 transition"
           >
-            稍后再说
+            {t('recharge.later')}
           </button>
         </div>
       </div>
@@ -850,13 +921,13 @@ function App() {
               onClick={handleCheckin}
               className="bg-white/20 px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition"
             >
-              Check in
+              {t('nav.checkin')}
             </button>
             <button 
               onClick={handleLogout}
               className="bg-white/10 px-3 py-1 rounded-lg text-sm hover:bg-white/20 transition"
             >
-              Logout
+              {t('nav.logout')}
             </button>
           </div>
         </div>
@@ -874,21 +945,21 @@ function App() {
                 <h2 className="text-lg font-bold">{partner?.name || '小零'}</h2>
                 <button 
                   onClick={() => {
-                    const newName = prompt('给你的AI伙伴起个名字吧：', partner?.name || '小零')
+                    const newName = prompt(t('ai.renamePrompt'), partner?.name || '小零')
                     if (newName && newName !== partner?.name) {
                       handleRename(newName)
                     }
                   }}
                   className="text-xs text-primary-500 hover:text-primary-600"
                 >
-                  ✏️ 改名
+                  ✏️ {t('ai.rename')}
                 </button>
                 <span className={`text-sm ${stage?.color}`}>
                   {stage?.name}
                 </span>
               </div>
               <p className="text-gray-500 text-sm">
-                {partner?.status === 'hibernated' ? '💤 休眠中' : '✨ 活跃中'}
+                {partner?.status === 'hibernated' ? `💤 ${t('ai.status.hibernating')}` : `✨ ${t('ai.status.active')}`}
               </p>
             </div>
           </div>
@@ -896,7 +967,7 @@ function App() {
           {/* 贡献值进度 */}
           <div className="mt-4">
             <div className="flex justify-between text-sm mb-1">
-              <span className="text-gray-500">本周贡献值</span>
+              <span className="text-gray-500">{t('stats.weeklyContribution')}</span>
               <span className="font-medium">{partner?.weekly_contribution || 0} / 15</span>
             </div>
             <div className="progress-bar">
@@ -920,7 +991,7 @@ function App() {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {tab === 'chat' ? '💬 对话' : tab === 'stats' ? '📊 统计' : '🏆 里程碑'}
+              {tab === 'chat' ? t('chat.tabChat') : tab === 'stats' ? t('chat.tabStats') : t('chat.tabMilestones')}
             </button>
           ))}
         </div>
@@ -941,7 +1012,7 @@ function App() {
                   } px-4 py-2`}>
                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                     {msg.points !== undefined && msg.points > 0 && (
-                      <p className="text-xs mt-1 opacity-70">+{msg.points}点</p>
+                      <p className="text-xs mt-1 opacity-70">+{msg.points}{t('common.points')}</p>
                     )}
                   </div>
                 </div>
@@ -949,7 +1020,7 @@ function App() {
               {loading && (
                 <div className="flex justify-start">
                   <div className="bg-white shadow rounded-2xl rounded-bl-md px-4 py-2">
-                    <p className="text-sm text-gray-400">正在思考中...</p>
+                    <p className="text-sm text-gray-400">{t('chat.thinking')}</p>
                   </div>
                 </div>
               )}
@@ -962,7 +1033,7 @@ function App() {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !loading && handleSend()}
-                placeholder="说点什么..."
+                placeholder={t('chat.placeholder')}
                 className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
                 disabled={loading}
               />
@@ -971,7 +1042,7 @@ function App() {
                 disabled={loading || !message.trim()}
                 className="btn-primary disabled:opacity-50"
               >
-                发送
+                {t('chat.send')}
               </button>
             </div>
           </div>
@@ -980,31 +1051,31 @@ function App() {
         {/* 统计界面 */}
         {activeTab === 'stats' && (
           <div className="card">
-            <h3 className="font-bold mb-4">📊 我的统计</h3>
+            <h3 className="font-bold mb-4">{t('stats.title')}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-gray-50 p-4 rounded-xl text-center">
                 <div className="text-2xl font-bold text-primary-500">
                   {partner?.total_contribution || 0}
                 </div>
-                <div className="text-sm text-gray-500">总贡献值</div>
+                <div className="text-sm text-gray-500">{t('stats.totalContribution')}</div>
               </div>
               <div className="bg-gray-50 p-4 rounded-xl text-center">
                 <div className="text-2xl font-bold text-accent-500">
                   {partner?.weekly_contribution || 0}
                 </div>
-                <div className="text-sm text-gray-500">本周贡献</div>
+                <div className="text-sm text-gray-500">{t('stats.weeklyContribution')}</div>
               </div>
               <div className="bg-gray-50 p-4 rounded-xl text-center">
                 <div className="text-2xl font-bold text-green-500">
                   {partner?.current_contribution || 0}
                 </div>
-                <div className="text-sm text-gray-500">当前贡献</div>
+                <div className="text-sm text-gray-500">{t('stats.currentContribution')}</div>
               </div>
               <div className="bg-gray-50 p-4 rounded-xl text-center">
                 <div className="text-2xl font-bold text-yellow-500">
                   {Object.values(partner?.abilities || {}).filter(Boolean).length}
                 </div>
-                <div className="text-sm text-gray-500">已解锁能力</div>
+                <div className="text-sm text-gray-500">{t('stats.unlockedAbilities')}</div>
               </div>
             </div>
           </div>
@@ -1013,14 +1084,14 @@ function App() {
         {/* 里程碑界面 */}
         {activeTab === 'milestones' && (
           <div className="card">
-            <h3 className="font-bold mb-4">🏆 里程碑</h3>
+            <h3 className="font-bold mb-4">{t('milestone.title')}</h3>
             <div className="space-y-3">
               {[
-                { points: 10, title: '初识', ability: '情感表达' },
-                { points: 25, title: '相知', ability: '专属记忆' },
-                { points: 50, title: '默契', ability: '深度对话' },
-                { points: 100, title: '灵魂伴侣', ability: '自我意识' },
-                { points: 200, title: '传奇羁绊', ability: '完全觉醒' },
+                { points: 10, titleKey: 'milestone.list.acquaintance.title', abilityKey: 'milestone.list.acquaintance.ability' },
+                { points: 25, titleKey: 'milestone.list.understanding.title', abilityKey: 'milestone.list.understanding.ability' },
+                { points: 50, titleKey: 'milestone.list.rapport.title', abilityKey: 'milestone.list.rapport.ability' },
+                { points: 100, titleKey: 'milestone.list.soulmate.title', abilityKey: 'milestone.list.soulmate.ability' },
+                { points: 200, titleKey: 'milestone.list.legend.title', abilityKey: 'milestone.list.legend.ability' },
               ].map((milestone, i) => {
                 const achieved = (partner?.total_contribution || 0) >= milestone.points
                 return (
@@ -1032,11 +1103,11 @@ function App() {
                   >
                     <span className="text-2xl">{achieved ? '✅' : '🔒'}</span>
                     <div className="flex-1">
-                      <div className="font-medium">{milestone.title}</div>
-                      <div className="text-sm text-gray-500">{milestone.ability}</div>
+                      <div className="font-medium">{t(milestone.titleKey)}</div>
+                      <div className="text-sm text-gray-500">{t(milestone.abilityKey)}</div>
                     </div>
                     <div className="text-sm font-bold text-primary-500">
-                      {milestone.points}点
+                      {milestone.points}{t('common.points')}
                     </div>
                   </div>
                 )

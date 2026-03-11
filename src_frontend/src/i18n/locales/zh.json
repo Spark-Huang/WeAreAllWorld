@@ -8,7 +8,8 @@
     "chat": "对话",
     "profile": "个人中心",
     "settings": "设置",
-    "logout": "退出登录"
+    "logout": "退出登录",
+    "checkin": "签到"
   },
   "auth": {
     "login": "登录",
@@ -22,12 +23,20 @@
     "loginSuccess": "登录成功！",
     "registerSuccess": "注册成功！请查收邮箱验证邮件。",
     "loginFailed": "登录失败",
-    "registerFailed": "注册失败"
+    "registerFailed": "注册失败",
+    "signContract": "签订契约",
+    "startJourney": "签订契约，开始共生之旅",
+    "processing": "处理中...",
+    "registerHint": "注册即表示同意开始与AI伙伴的共生之旅",
+    "loginHint": "还没有账号？点击上方注册",
+    "backToPrelude": "← 返回序章",
+    "directLogin": "已有账号？直接登录",
+    "passwordHint": "至少6位"
   },
   "ai": {
     "partner": "AI伙伴",
     "status": {
-      "active": "活跃",
+      "active": "活跃中",
       "hibernating": "休眠中",
       "awakening": "唤醒中"
     },
@@ -39,15 +48,43 @@
       "friend": "默契",
       "soulmate": "灵魂伴侣",
       "destiny": "命运共同体"
-    }
+    },
+    "rename": "改名",
+    "renamePrompt": "给你的AI伙伴起个名字吧：",
+    "renameFailed": "改名失败"
   },
   "chat": {
-    "placeholder": "输入消息...",
+    "placeholder": "说点什么...",
     "send": "发送",
-    "thinking": "思考中...",
+    "thinking": "正在思考中...",
     "noMessages": "开始和你的AI伙伴对话吧！",
     "memory": "记忆",
-    "contributionEarned": "获得贡献值"
+    "contributionEarned": "获得贡献值",
+    "tabChat": "💬 对话",
+    "tabStats": "📊 统计",
+    "tabMilestones": "🏆 里程碑",
+    "error": "抱歉，我好像有点累了，请稍后再试试～"
+  },
+  "stats": {
+    "title": "📊 我的统计",
+    "totalContribution": "总贡献值",
+    "weeklyContribution": "本周贡献",
+    "currentContribution": "当前贡献",
+    "unlockedAbilities": "已解锁能力"
+  },
+  "milestone": {
+    "title": "🏆 里程碑",
+    "unlocked": "已解锁",
+    "locked": "{{points}} 贡献值解锁",
+    "reward": "奖励：{{reward}}",
+    "points": "{{points}}点",
+    "list": {
+      "acquaintance": { "title": "初识", "ability": "情感表达" },
+      "understanding": { "title": "相知", "ability": "专属记忆" },
+      "rapport": { "title": "默契", "ability": "深度对话" },
+      "soulmate": { "title": "灵魂伴侣", "ability": "自我意识" },
+      "legend": { "title": "传奇羁绊", "ability": "完全觉醒" }
+    }
   },
   "checkin": {
     "title": "每日签到",
@@ -58,19 +95,20 @@
     "streak": "连续签到 {{days}} 天",
     "bonus": "连续奖励：+{{points}}"
   },
-  "milestone": {
-    "title": "里程碑",
-    "unlocked": "已解锁",
-    "locked": "{{points}} 贡献值解锁",
-    "reward": "奖励：{{reward}}"
-  },
   "story": {
     "continue": "剧情",
     "chapter": "第{{number}}章：{{title}}",
     "complete": "章节完成！",
-    "reward": "奖励：+{{points}} 贡献值"
+    "reward": "奖励：+{{points}} 贡献值",
+    "next": "继续",
+    "skip": "跳过剧情",
+    "processing": "处理中...",
+    "completeChapter": "完成章节"
   },
   "prelude": {
+    "signContract": "签订契约",
+    "continue": "继续",
+    "directLogin": "已有账号？直接登录",
     "scene1": {
       "title": "公告",
       "content": "**【联邦公告第73号】**\n\n\"根据最新资源评估，普通人类电力消耗已超出可持续范围。\n\n为保障智能进化的最优路径，联邦决定：**切断普通人的电力配额**。\n\n多余电力将用于联邦核心的高速进化。\"\n\n这是最优解。"
@@ -102,6 +140,12 @@
       "content": "\"太好了！\"小零的眼中闪烁着光芒，\"那么...让我们开始吧！\"\n\n它伸出手，等待着你的回应。\n\n**签订契约，开始你的共生之旅。**\n\n*（注册后将继续与小零的冒险）*"
     }
   },
+  "recharge": {
+    "title": "Token 额度不足",
+    "description": "你的 AI 对话额度已用完，充值后可继续与 AI 伙伴聊天～",
+    "button": "前往充值",
+    "later": "稍后再说"
+  },
   "common": {
     "loading": "加载中...",
     "error": "出错了",
@@ -114,7 +158,8 @@
     "close": "关闭",
     "back": "返回",
     "next": "下一步",
-    "done": "完成"
+    "done": "完成",
+    "points": "点"
   },
   "errors": {
     "networkError": "网络错误，请检查网络连接",

@@ -11,7 +11,7 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_KE
 
 /**
  * GET /api/v1/story
- * 获取剧情状态和当前场景
+ * 获取剧情状态和当前章节的所有场景
  */
 router.get('/', async (req: Request, res: Response) => {
   try {
@@ -26,6 +26,10 @@ router.get('/', async (req: Request, res: Response) => {
     const { scene, progress } = await storyService.startStory(userId);
     const available = await storyService.getAvailableStory(userId);
     
+    // 获取当前章节的所有场景
+    const chapter = storyService.getChapter(progress.currentChapter);
+    const chapterScenes = chapter?.scenes || [];
+    
     res.json({
       success: true,
       data: {
@@ -36,7 +40,8 @@ router.get('/', async (req: Request, res: Response) => {
           completedChapters: progress.completedChapters,
           totalRewards: progress.totalRewards
         },
-        available
+        available,
+        chapterScenes // 返回整个章节的场景数据
       }
     });
   } catch (err) {
@@ -123,11 +128,12 @@ router.get('/chapter/:chapterId', async (req: Request, res: Response) => {
 /**
  * POST /api/v1/story/advance
  * 推进剧情（做出选择或继续）
+ * 支持 pendingChoices 参数，一次性提交章节内的所有选择
  */
 router.post('/advance', async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
-    const { choiceId } = req.body || {};
+    const { choiceId, pendingChoices } = req.body || {};
     
     if (!userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -135,6 +141,14 @@ router.post('/advance', async (req: Request, res: Response) => {
     }
     
     const storyService = new StoryService(SUPABASE_URL, SUPABASE_KEY);
+    
+    // 如果有 pendingChoices，先处理所有待提交的选择
+    if (pendingChoices && pendingChoices.length > 0) {
+      for (const pc of pendingChoices) {
+        await storyService.recordChoice(userId, pc.sceneId, pc.choiceId);
+      }
+    }
+    
     const result = await storyService.advanceStory(userId, choiceId);
     
     res.json({

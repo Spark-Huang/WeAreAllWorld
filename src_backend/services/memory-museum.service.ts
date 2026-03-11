@@ -5,7 +5,7 @@
  * 目的：展示长期价值，增强迁移成本
  */
 
-import { supabase } from '../api/config/supabase.js'
+import { supabase } from '../api/index.js'
 
 export interface Memory {
   id: string

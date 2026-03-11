@@ -440,6 +440,24 @@ export class StoryService {
   }
   
   /**
+   * 记录用户选择（用于批量提交）
+   */
+  async recordChoice(userId: string, sceneId: string, choiceId: string): Promise<void> {
+    const progress = await this.getUserProgress(userId);
+    if (!progress) return;
+    
+    await this.supabase
+      .from('story_progress')
+      .update({
+        choices_made: [
+          ...progress.choicesMade,
+          { sceneId, choiceId, timestamp: new Date().toISOString() }
+        ]
+      })
+      .eq('user_id', userId);
+  }
+  
+  /**
    * 获取用户剧情进度
    */
   async getUserProgress(userId: string): Promise<UserStoryProgress | null> {

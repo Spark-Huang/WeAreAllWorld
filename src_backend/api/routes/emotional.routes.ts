@@ -9,7 +9,7 @@
 
 import { Router, Request, Response } from 'express'
 import { authMiddleware } from '../middleware/auth.middleware.js'
-import { supabase } from '../config/supabase.js'
+import { supabase } from '../index.js'
 import {
   generateLegacyLetter,
   getLegacyLetter,

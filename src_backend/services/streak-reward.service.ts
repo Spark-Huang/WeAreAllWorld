@@ -5,7 +5,7 @@
  * 目的：提高用户留存
  */
 
-import { supabase } from '../api/config/supabase.js'
+import { supabase } from '../api/index.js'
 
 export interface LoginReward {
   userId: string

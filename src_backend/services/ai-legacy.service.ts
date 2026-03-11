@@ -5,7 +5,7 @@
  * 目的：极致情感冲击，激发用户保护欲
  */
 
-import { supabase } from '../api/config/supabase.js'
+import { supabase } from '../api/index.js'
 
 export interface LegacyLetter {
   userId: string

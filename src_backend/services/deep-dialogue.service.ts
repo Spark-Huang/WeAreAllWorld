@@ -5,7 +5,7 @@
  * 目的：提高互动质量和贡献值
  */
 
-import { supabase } from '../api/config/supabase.js'
+import { supabase } from '../api/index.js'
 
 export interface DeepDialoguePrompt {
   id: string
