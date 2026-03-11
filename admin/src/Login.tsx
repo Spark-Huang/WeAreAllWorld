@@ -84,7 +84,7 @@ export function AdminLogin({ onLoginSuccess }: LoginProps) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@weareall.world"
+              placeholder="请输入邮箱"
               required
             />
           </div>
