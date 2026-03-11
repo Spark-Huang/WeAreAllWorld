@@ -619,7 +619,7 @@ function App() {
   if (!user && preludeScene) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
-        {/* 语言切换按钮 */}
+        {/* 语言切换按钮 - 右上角 */}
         <div className="absolute top-4 right-4">
           <button
             onClick={() => i18n.changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
@@ -696,7 +696,7 @@ function App() {
   if (!user) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
-        {/* 语言切换按钮 */}
+        {/* 语言切换按钮 - 右上角 */}
         <div className="absolute top-4 right-4">
           <button
             onClick={() => i18n.changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
