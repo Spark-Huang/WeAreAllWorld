@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { supabase } from './lib/supabase'
 import type { User, Session } from '@supabase/supabase-js'
 import { LanguageSwitcher } from './components/LanguageSwitcher'
-import { AdminPanel } from './Admin'
 
 // API 基础地址
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
@@ -133,7 +132,6 @@ function App() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
-  const [showAdmin, setShowAdmin] = useState(false)  // Admin 界面切换
   const chatEndRef = useRef<HTMLDivElement>(null)
   
   // 序章状态（未登录时的剧情）
@@ -899,25 +897,8 @@ function App() {
   // ========== 主界面 ==========
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Admin 界面 */}
-      {showAdmin ? (
-        <div>
-          <div className="bg-gray-800 text-white p-4 flex items-center justify-between">
-            <h1 className="text-xl font-bold">⚙️ Admin Panel</h1>
-            <button 
-              onClick={() => setShowAdmin(false)}
-              className="bg-white/20 px-4 py-2 rounded-lg hover:bg-white/30"
-            >
-              ← Back
-            </button>
-          </div>
-          <AdminPanel />
-        </div>
-      ) : (
-        <>
-          {/* 正常用户界面 */}
-          {/* 充值弹窗 */}
-          {showRechargeModal && <RechargeModal />}
+      {/* 充值弹窗 */}
+      {showRechargeModal && <RechargeModal />}
       
       {/* 顶部导航 */}
       <header className="gradient-bg text-white p-4 sticky top-0 z-10">
@@ -925,14 +906,6 @@ function App() {
           <h1 className="text-xl font-bold">🌍 {t('brand.name')}</h1>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
-            {/* Admin 入口 */}
-            <button 
-              onClick={() => setShowAdmin(true)}
-              className="bg-white/20 px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition"
-              title="Admin"
-            >
-              ⚙️
-            </button>
             <span className="text-sm opacity-80">{partner?.total_contribution || 0} {t('ai.contribution')}</span>
             {/* 剧情按钮 */}
             {storyData && !storyData.progress.completedChapters.includes(5) && (
@@ -1142,8 +1115,6 @@ function App() {
           </div>
         )}
       </div>
-        </>
-      )}
     </div>
   )
 }
