@@ -1,10 +1,22 @@
 import { useState, useEffect } from 'react'
+import AdminLogin from './Login'
 
 // API 基础地址
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
 const ADMIN_API_KEY = 'weareallworld_admin_2026'
 
+// 管理员邮箱白名单
+const ADMIN_EMAILS = [
+  'admin@weareall.world',
+  'test@weareall.world',
+]
+
 // 类型定义
+interface AdminUser {
+  email: string
+  id: string
+}
+
 interface Stats {
   users: { total: number }
   aiPartners: { total: number; active: number; hibernated: number }
@@ -49,6 +61,7 @@ interface TaskResult {
 }
 
 export default function App() {
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(null)
   const [stats, setStats] = useState<Stats | null>(null)
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -185,6 +198,11 @@ export default function App() {
     }
   }, [activeTab, pagination.page])
 
+  // 未登录时显示登录页面
+  if (!adminUser) {
+    return <AdminLogin onLoginSuccess={setAdminUser} />
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -193,11 +211,27 @@ export default function App() {
     )
   }
 
+  // 登出函数
+  const handleLogout = () => {
+    setAdminUser(null)
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-6xl mx-auto">
         {/* 标题 */}
-        <h1 className="text-3xl font-bold mb-6">🔧 管理后台</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">🔧 管理后台</h1>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-400">{adminUser.email}</span>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-500 text-sm"
+            >
+              登出
+            </button>
+          </div>
+        </div>
         
         {/* 标签页 */}
         <div className="flex gap-4 mb-6">
