@@ -5,6 +5,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { recordAuthFailure } from './rate-limit.middleware';
 
 // 扩展 Request 类型
 declare global {
@@ -71,6 +72,8 @@ export async function authMiddleware(
         next();
         return;
       }
+      // 认证失败：缺少用户 ID
+      recordAuthFailure(req.ip || req.socket.remoteAddress || 'unknown');
       res.status(401).json({ error: 'Invalid user ID' });
       return;
     }
@@ -79,6 +82,8 @@ export async function authMiddleware(
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      // 认证失败：缺少授权头
+      recordAuthFailure(req.ip || req.socket.remoteAddress || 'unknown');
       res.status(401).json({ error: 'Missing authorization. Use Bearer token or API key.' });
       return;
     }
@@ -90,6 +95,8 @@ export async function authMiddleware(
     
     if (error || !user) {
       console.error('JWT validation error:', error);
+      // 认证失败：JWT 无效
+      recordAuthFailure(req.ip || req.socket.remoteAddress || 'unknown');
       res.status(401).json({ error: 'Invalid or expired token' });
       return;
     }
