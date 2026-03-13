@@ -163,7 +163,7 @@ export class StoryService {
       id: 2,
       title: '相知',
       description: '通过日常的交流，你与小零的羁绊逐渐加深，涌现开始显现...',
-      requiredContribution: 25,
+      requiredContribution: 10,
       rewardContribution: 10,
       scenes: [
         {
@@ -520,6 +520,13 @@ export class StoryService {
     // 第一章始终解锁
     if (chapterId === 1) return true;
     
+    // 检查前置章节是否完成
+    const progress = await this.getUserProgress(userId);
+    const previousChapter = chapterId - 1;
+    if (previousChapter >= 1 && !progress?.completedChapters?.includes(previousChapter)) {
+      return false;
+    }
+    
     // 检查用户贡献值
     const { data: partner } = await this.supabase
       .from('ai_partners')
@@ -725,12 +732,60 @@ export class StoryService {
   /**
    * 根据ID查找场景
    */
-  private findSceneById(sceneId: string): StoryScene | null {
+  findSceneById(sceneId: string): StoryScene | null {
     for (const chapter of this.STORY_CHAPTERS) {
       const scene = chapter.scenes.find(s => s.id === sceneId);
       if (scene) return scene;
     }
     return null;
+  }
+  
+  /**
+   * 更新用户当前场景
+   */
+  async updateCurrentScene(userId: string, chapterId: number, sceneId: string): Promise<void> {
+    await this.supabase
+      .from('story_progress')
+      .update({
+        current_chapter: chapterId,
+        current_scene: sceneId
+      })
+      .eq('user_id', userId);
+  }
+  
+  /**
+   * 完成章节
+   */
+  async completeChapter(userId: string, chapterId: number): Promise<void> {
+    const progress = await this.getUserProgress(userId);
+    if (!progress) return;
+    
+    const chapter = this.getChapter(chapterId);
+    const reward = chapter?.rewardContribution || 0;
+    
+    // 更新完成状态
+    await this.supabase
+      .from('story_progress')
+      .update({
+        completed_chapters: [...progress.completedChapters, chapterId],
+        total_rewards: progress.totalRewards + reward
+      })
+      .eq('user_id', userId);
+    
+    // 检查是否有下一章并解锁
+    const nextChapter = this.getChapter(chapterId + 1);
+    if (nextChapter) {
+      await this.supabase
+        .from('story_progress')
+        .update({
+          current_chapter: chapterId + 1,
+          current_scene: nextChapter.scenes[0]?.id
+        })
+        .eq('user_id', userId);
+    }
+    
+    // 发放奖励
+    // TODO: 调用贡献值更新逻辑
   }
   
   /**

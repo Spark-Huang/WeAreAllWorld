@@ -189,16 +189,14 @@ router.post('/', quotaCheckMiddleware(1000), async (req: Request, res: Response)
         }
       });
     
-    // 6. 快速更新贡献值（使用快速判定结果）
-    // 注意：不再传入 ai_understanding，避免重复插入记录
-    await supabase.rpc('update_contribution', {
-      p_user_id: userId,
-      p_points: quickResult.points,
-      p_category: quickResult.qualityType,
-      p_data_rarity: quickResult.dataRarity,
-      p_ai_understanding: null,
-      p_message_hash: null
-    });
+    // 6. 快速更新贡献值（直接更新 ai_partners 表，避免 RPC 创建空记录）
+    await supabase
+      .from('ai_partners')
+      .update({
+        total_contribution: partner.total_contribution + quickResult.points,
+        last_interaction_at: new Date().toISOString()
+      })
+      .eq('user_id', userId);
     
     res.json({
       success: true,

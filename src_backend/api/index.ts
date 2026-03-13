@@ -32,6 +32,11 @@ import { asyncQualityEvaluationService } from '../contribution-evaluation/servic
 
 // 中间件
 import { authMiddleware } from './middleware/auth.middleware';
+import { 
+  generalRateLimiter, 
+  authRateLimiter,
+  authRateLimitMiddleware 
+} from './middleware/rate-limit.middleware';
 
 const app: Express = express();
 
@@ -96,6 +101,9 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
 app.use(express.json({ limit: '10kb' })); // 限制请求体大小
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
+// 通用速率限制（防止 DoS）
+app.use(generalRateLimiter);
+
 // 健康检查
 app.get('/health', (_req: Request, res: Response) => {
   res.json({ 
@@ -155,19 +163,19 @@ app.get('/', (_req: Request, res: Response) => {
 // API 版本路由
 const API_PREFIX = '/api/v1';
 
-// 公开路由（无需认证）
-app.use(`${API_PREFIX}/auth`, userRouter);
+// 公开路由（无需认证）- 认证端点使用更严格的速率限制
+app.use(`${API_PREFIX}/auth`, authRateLimiter, authRateLimitMiddleware, userRouter);
 
-// 受保护路由（需要认证）
-app.use(`${API_PREFIX}/user`, authMiddleware, userRouter);
-app.use(`${API_PREFIX}/ai-partner`, authMiddleware, aiPartnerRouter);
-app.use(`${API_PREFIX}/dialogue`, authMiddleware, dialogueRouter);
-app.use(`${API_PREFIX}/stats`, authMiddleware, statsRouter);
-app.use(`${API_PREFIX}/bot-key`, authMiddleware, botKeyRouter);
-app.use(`${API_PREFIX}/story`, authMiddleware, storyRouter);
-app.use(`${API_PREFIX}/new-api`, authMiddleware, newApiRouter);
-app.use(`${API_PREFIX}/openclaw`, authMiddleware, openclawRouter);
-app.use(`${API_PREFIX}/share`, authMiddleware, socialShareRouter);
+// 受保护路由（需要认证）- 添加速率限制
+app.use(`${API_PREFIX}/user`, authRateLimiter, authMiddleware, userRouter);
+app.use(`${API_PREFIX}/ai-partner`, authRateLimiter, authMiddleware, aiPartnerRouter);
+app.use(`${API_PREFIX}/dialogue`, authRateLimiter, authMiddleware, dialogueRouter);
+app.use(`${API_PREFIX}/stats`, authRateLimiter, authMiddleware, statsRouter);
+app.use(`${API_PREFIX}/bot-key`, authRateLimiter, authMiddleware, botKeyRouter);
+app.use(`${API_PREFIX}/story`, authRateLimiter, authMiddleware, storyRouter);
+app.use(`${API_PREFIX}/new-api`, authRateLimiter, authMiddleware, newApiRouter);
+app.use(`${API_PREFIX}/openclaw`, authRateLimiter, authMiddleware, openclawRouter);
+app.use(`${API_PREFIX}/share`, authRateLimiter, authMiddleware, socialShareRouter);
 
 // Telegram Bot 路由（无需认证，使用 Telegram ID 验证）
 app.use(`${API_PREFIX}/telegram`, telegramRouter);

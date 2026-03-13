@@ -197,7 +197,7 @@ spec:
         - name: GATEWAY__PORT
           value: "18789"
         - name: GATEWAY__AGENT__MODEL
-          value: "hwc_maas/glm-5"
+          value: "hwc_maas/deepseek-v3.2"
         - name: ANTHROPIC_API_KEY
           valueFrom:
             secretKeyRef:

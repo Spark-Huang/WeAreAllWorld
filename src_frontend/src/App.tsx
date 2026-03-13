@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { supabase } from './lib/supabase'
 import type { User, Session } from '@supabase/supabase-js'
 import { LanguageSwitcher } from './components/LanguageSwitcher'
-// import { AdminPanel } from './Admin'  // Temporarily disabled
 
 // API 基础地址
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
@@ -335,7 +334,9 @@ function App() {
             },
             body: JSON.stringify({ 
               choiceId,
-              pendingChoices: pendingChoices // 提交所有待提交的选择
+              pendingChoices: pendingChoices, // 提交所有待提交的选择
+              currentSceneId: currentScene.id, // 当前场景 ID
+              completedChapterId: storyData.progress.currentChapter // 已完成的章节 ID
             })
           })
           const data = await res.json()
