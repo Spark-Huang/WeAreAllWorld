@@ -235,7 +235,9 @@ function App() {
       if (data.success && data.data) {
         // 转换为聊天消息格式
         const messages: ChatMessage[] = []
-        data.data.forEach((log: any) => {
+        // 先反转记录顺序（从旧到新），再遍历
+        const sortedData = [...data.data].reverse()
+        sortedData.forEach((log: any) => {
           // 优先使用 raw_message/raw_reply，备选使用 understanding
           const userMessage = log.rawMessage || log.understanding?.userMessage
           const aiReply = log.rawReply || log.understanding?.aiReply
@@ -257,8 +259,8 @@ function App() {
             })
           }
         })
-        // 按时间正序排列
-        setChatHistory(messages.reverse())
+        // 按时间正序排列（最旧的在前）
+        setChatHistory(messages)
       }
     } catch (err) {
       console.error('Load chat history failed:', err)
