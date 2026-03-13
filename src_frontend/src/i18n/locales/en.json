@@ -24,6 +24,7 @@
     "registerSuccess": "Registration successful! Please check your email to verify.",
     "loginFailed": "Login failed",
     "registerFailed": "Registration failed",
+    "emailExists": "This email is already registered. Please login directly.",
     "signContract": "Sign Contract",
     "startJourney": "Sign the contract, begin your symbiotic journey",
     "processing": "Processing...",

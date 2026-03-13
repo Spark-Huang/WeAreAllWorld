@@ -24,6 +24,7 @@
     "registerSuccess": "注册成功！请查收邮箱验证邮件。",
     "loginFailed": "登录失败",
     "registerFailed": "注册失败",
+    "emailExists": "该邮箱已被注册，请直接登录",
     "signContract": "签订契约",
     "startJourney": "签订契约，开始共生之旅",
     "processing": "处理中...",

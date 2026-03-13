@@ -442,7 +442,19 @@ function App() {
           }
         }
       })
-      if (error) throw error
+      if (error) {
+        // 检查是否是邮箱已存在的错误
+        if (error.message.includes('already registered') ||
+            error.message.includes('already been registered') ||
+            error.message.includes('User already registered') ||
+            error.status === 400) {
+          alert(t('auth.emailExists'))
+          setAuthMode('login')
+        } else {
+          throw error
+        }
+        return
+      }
       
       // 检查是否需要邮箱验证
       if (data.user && !data.session) {
