@@ -139,7 +139,7 @@ router.get('/chapter/:chapterId', async (req: Request, res: Response) => {
  */
 router.post('/advance', async (req: Request, res: Response) => {
   const userId = req.user?.id;
-  const { choiceId, pendingChoices } = req.body || {};
+  const { choiceId, pendingChoices, currentSceneId, completedChapterId } = req.body || {};
   
   if (!userId) {
     res.status(401).json({ error: 'Unauthorized' });
@@ -164,13 +164,29 @@ router.post('/advance', async (req: Request, res: Response) => {
         }
       }
       
-      const result = await storyService.advanceStory(userId, choiceId);
+      // 如果前端传入了当前场景 ID，先更新数据库中的进度
+      if (currentSceneId) {
+        const scene = storyService.findSceneById(currentSceneId);
+        if (scene) {
+          // 先更新当前场景
+          await storyService.updateCurrentScene(userId, scene.chapterId, currentSceneId);
+        }
+      }
       
-      console.log(`[Story] User ${userId} chapter complete:`, {
-        event: result.event.type,
-        reward: result.reward,
-        chapterComplete: result.chapterComplete
-      });
+      // 如果前端传入了已完成的章节 ID，直接标记章节完成
+      if (completedChapterId) {
+        await storyService.completeChapter(userId, completedChapterId);
+        console.log(`[Story] User ${userId} chapter ${completedChapterId} completed`);
+      } else {
+        // 否则使用原来的逻辑
+        const result = await storyService.advanceStory(userId, choiceId);
+        
+        console.log(`[Story] User ${userId} chapter complete:`, {
+          event: result.event.type,
+          reward: result.reward,
+          chapterComplete: result.chapterComplete
+        });
+      }
     } catch (err) {
       console.error('[Story] Background advance error:', err);
     }

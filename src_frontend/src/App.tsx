@@ -334,7 +334,9 @@ function App() {
             },
             body: JSON.stringify({ 
               choiceId,
-              pendingChoices: pendingChoices // 提交所有待提交的选择
+              pendingChoices: pendingChoices, // 提交所有待提交的选择
+              currentSceneId: currentScene.id, // 当前场景 ID
+              completedChapterId: storyData.progress.currentChapter // 已完成的章节 ID
             })
           })
           const data = await res.json()
