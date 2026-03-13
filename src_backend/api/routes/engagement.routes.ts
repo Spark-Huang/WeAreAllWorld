@@ -33,7 +33,7 @@ import {
   MEMORY_TYPE_LABELS
 } from '../../services/memory-museum.service.js'
 
-const router = Router()
+const router: Router = Router()
 
 // 所有路由需要认证
 router.use(authMiddleware)
@@ -325,7 +325,7 @@ router.delete('/memories/:id', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' })
     }
 
-    const { id } = req.params
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
     const success = await deleteMemory(id, userId)
 
     if (success) {

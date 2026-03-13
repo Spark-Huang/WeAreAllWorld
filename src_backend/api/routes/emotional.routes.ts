@@ -25,7 +25,7 @@ import {
   RATING_INFO
 } from '../../services/contribution-detail.service.js'
 
-const router = Router()
+const router: Router = Router()
 
 // 所有路由需要认证
 router.use(authMiddleware)

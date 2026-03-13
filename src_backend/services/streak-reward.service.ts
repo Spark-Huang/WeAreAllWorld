@@ -139,7 +139,7 @@ function findNextMilestone(currentStreak: number): { days: number; reward: strin
   
   for (const days of milestoneDays) {
     if (days > currentStreak) {
-      const reward = STREAK_REWARDS.milestones[days]
+      const reward = STREAK_REWARDS.milestones[days as keyof typeof STREAK_REWARDS.milestones]
       return {
         days,
         reward: `${reward.emoji} ${reward.title}`

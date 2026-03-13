@@ -11,7 +11,7 @@ import { Router, Request, Response } from 'express'
 import { supabase } from '../index.js'
 import { randomUUID } from 'crypto'
 
-const router = Router()
+const router: Router = Router()
 
 /**
  * POST /api/v1/telegram/auth
@@ -111,12 +111,12 @@ router.post('/auth', async (req: Request, res: Response) => {
  */
 router.get('/status/:telegramId', async (req: Request, res: Response) => {
   try {
-    const { telegramId } = req.params
+    const telegramIdParam = Array.isArray(req.params.telegramId) ? req.params.telegramId[0] : req.params.telegramId
 
     const { data: user, error } = await supabase
       .from('users')
       .select('id, contribution, checkin_streak, created_at')
-      .eq('telegram_id', parseInt(telegramId))
+      .eq('telegram_id', parseInt(telegramIdParam))
       .single()
 
     if (!user) {
@@ -164,7 +164,7 @@ router.post('/checkin', async (req: Request, res: Response) => {
     // 获取用户
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('id, last_checkin, checkin_streak')
+      .select('id, last_checkin, checkin_streak, contribution')
       .eq('telegram_id', telegramId)
       .single()
 
@@ -241,8 +241,10 @@ async function getOrCreateOpenClawPod(userId: string): Promise<string> {
   try {
     const response = await fetch(`${OPENCLAW_GATEWAY}/pod/${userId}`)
     if (response.ok) {
-      const data = await response.json()
-      return data.podUrl
+      const data = await response.json() as { podUrl?: string }
+      if (data.podUrl) {
+        return data.podUrl
+      }
     }
   } catch (error) {
     console.log('No dedicated pod, using shared')
