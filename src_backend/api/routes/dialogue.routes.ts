@@ -148,19 +148,47 @@ router.post('/', quotaCheckMiddleware(1000), async (req: Request, res: Response)
     // 获取或创建会话
     const sessionId = await getOrCreateSession(userId);
     
+    // 加载最近的对话历史作为上下文
+    const { data: recentLogs } = await supabase
+      .from('interaction_logs')
+      .select('raw_message, raw_reply')
+      .eq('user_id', userId)
+      .not('raw_message', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(5);
+    
+    // 构建对话历史（从旧到新）
+    const conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+    if (recentLogs && recentLogs.length > 0) {
+      // 反转顺序，从旧到新
+      const sortedLogs = [...recentLogs].reverse();
+      for (const log of sortedLogs) {
+        if (log.raw_message) {
+          conversationHistory.push({ role: 'user', content: log.raw_message });
+        }
+        if (log.raw_reply) {
+          conversationHistory.push({ role: 'assistant', content: log.raw_reply });
+        }
+      }
+    }
+    
     // 生成AI回复
     const growthStage = getGrowthStage(partner.total_contribution);
     let aiReply = '';
+    
+    console.log(`[对话] AI伙伴名字: ${partner.name}, 成长阶段: ${growthStage}`);
+    console.log(`[对话] 对话历史长度: ${conversationHistory.length}`);
+    console.log(`[对话] 传递给 LLM 的 partnerName: ${partner.name || '小零'}`);
     
     try {
       aiReply = await llmService.generatePartnerReply({
         userName: userData?.telegram_username || '用户',
         userMessage: message,
-        partnerName: '小零',
+        partnerName: partner.name || '小零',
         totalContribution: partner.total_contribution,
         growthStage,
         abilities: partner.abilities || {},
-        conversationHistory: []
+        conversationHistory
       });
     } catch (llmError) {
       console.error('LLM error:', llmError);
