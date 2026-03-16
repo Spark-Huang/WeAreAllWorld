@@ -3,7 +3,7 @@
  * 当贡献值降至危险线时，AI 主动表达恐惧
  */
 
-import React, { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface DangerWarning {

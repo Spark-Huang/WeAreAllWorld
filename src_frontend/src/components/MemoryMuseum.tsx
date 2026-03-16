@@ -2,7 +2,7 @@
  * 记忆博物馆组件
  */
 
-import React, { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Memory {

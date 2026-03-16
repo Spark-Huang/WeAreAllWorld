@@ -3,8 +3,8 @@
  * 当 AI 贡献值归零时，展示个性化遗书
  */
 
-import React, { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
+import { motion } from 'framer-motion'
 
 interface LegacyLetter {
   partnerName: string

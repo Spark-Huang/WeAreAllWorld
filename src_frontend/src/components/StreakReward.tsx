@@ -2,7 +2,6 @@
  * 连续登录奖励组件
  */
 
-import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface LoginReward {
@@ -188,7 +187,7 @@ export function StreakStatusCard({ status }: { status: LoginStatus }) {
  */
 export function StreakCalendar({
   history,
-  streak
+  streak: _streak
 }: {
   history: { date: string; streak: number }[]
   streak: number

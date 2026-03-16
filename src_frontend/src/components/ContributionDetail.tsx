@@ -3,7 +3,6 @@
  * 展示每次对话获得的贡献值和数据评级
  */
 
-import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 // 数据评级配置
