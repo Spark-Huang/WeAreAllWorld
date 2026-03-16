@@ -152,7 +152,7 @@ interface UserContext {
 ## 5. 相关文档
 
 - [new-api-integration.md](../new-api-integration.md) - New API 网关集成
-- [admin-panel/README.md](../../../admin-panel/README.md) - 管理后台文档
+- [admin-panel/README.md](../../../src_admin/admin-panel/README.md) - 管理后台文档
 - [openclaw-helm](https://github.com/serhanekicii/openclaw-helm) - Helm Chart 仓库
 
 ---

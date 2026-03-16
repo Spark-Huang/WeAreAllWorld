@@ -235,7 +235,7 @@ docker ps | grep new-api
 ### 3. 部署管理后台
 
 ```bash
-cd /root/.openclaw/workspace/admin-panel
+cd /root/.openclaw/workspace/WeAreAllWorld/src_admin/admin-panel
 
 # 安装依赖
 pnpm install

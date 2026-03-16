@@ -83,7 +83,10 @@ WeAreAllWorld/
 ├── src_multi_terminal/    # 多终端支持
 │   ├── telegram/          # Telegram Bot
 │   └── web/               # Web 端（预留）
-├── src_admin/             # 管理后台
+├── src_admin/             # 管理后台（统一目录）
+│   ├── admin/             # Vite 管理前端
+│   ├── admin-panel/       # Admin panel 后端
+│   └── web/               # Web Admin UI (含 Dockerfile)
 ├── docs/                  # 文档
 │   ├── mvp/               # MVP 文档
 │   ├── sql/               # 数据库迁移

@@ -109,7 +109,10 @@
 ```
 src_frontend/    - React 前端
 src_backend/     - Express 后端
-src_admin/       - 管理后台
+src_admin/       - 管理后台（统一目录）
+  ├── admin/     - Vite 管理前端
+  ├── admin-panel/ - Admin panel 后端
+  └── web/       - Web Admin UI
 src_multi_terminal/
   ├── telegram/  - Telegram Bot
   └── web/       - Web 端（预留）

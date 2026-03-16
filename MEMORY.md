@@ -25,8 +25,10 @@ WeAreAllWorld/
 │   ├── services/         # 业务服务
 │   └── contribution-evaluation/  # 贡献值评估
 ├── src_frontend/         # 用户前端 (React + Vite)
-├── src_admin/            # 管理后台 (React + Vite)
-├── admin-panel/          # 管理后台后端 (独立部署)
+├── src_admin/            # 管理后台（统一目录）
+│   ├── admin/            # Vite 管理前端
+│   ├── admin-panel/      # 管理后台后端 (独立部署)
+│   └── web/              # Web Admin UI
 ├── scripts/              # 测试脚本
 ├── memory/               # 每日工作日志
 └── docs/                 # 文档

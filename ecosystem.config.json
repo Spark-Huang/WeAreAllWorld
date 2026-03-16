@@ -38,7 +38,7 @@
       "name": "weareallworld-admin",
       "script": "node_modules/vite/bin/vite.js",
       "args": "--host 0.0.0.0 --port 5168",
-      "cwd": "/root/.openclaw/workspace/WeAreAllWorld/admin",
+      "cwd": "/root/.openclaw/workspace/WeAreAllWorld/src_admin/admin",
       "instances": 1,
       "exec_mode": "fork",
       "autorestart": true,
