@@ -33,9 +33,9 @@ import { asyncQualityEvaluationService } from '../contribution-evaluation/servic
 // 中间件
 import { authMiddleware } from './middleware/auth.middleware';
 import { 
-  generalRateLimiter, 
-  authRateLimiter,
-  authRateLimitMiddleware 
+  globalRateLimiter, 
+  authRateLimiter, 
+  authFailureGuard 
 } from './middleware/rate-limit.middleware';
 
 const app: Express = express();
@@ -101,8 +101,8 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
 app.use(express.json({ limit: '10kb' })); // 限制请求体大小
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-// 速率限制 - 安全必需
-app.use(generalRateLimiter);
+// 全局速率限制 - 防止 DoS 攻击
+app.use(globalRateLimiter);
 
 // 健康检查
 app.get('/health', (_req: Request, res: Response) => {
@@ -163,8 +163,8 @@ app.get('/', (_req: Request, res: Response) => {
 // API 版本路由
 const API_PREFIX = '/api/v1';
 
-// 公开路由（无需认证）- 使用严格的认证速率限制
-app.use(`${API_PREFIX}/auth`, authRateLimiter, authRateLimitMiddleware, userRouter);
+// 公开路由（无需认证）- 添加认证速率限制
+app.use(`${API_PREFIX}/auth`, authRateLimiter, authFailureGuard, userRouter);
 
 // 受保护路由（需要认证）
 app.use(`${API_PREFIX}/user`, authMiddleware, userRouter);

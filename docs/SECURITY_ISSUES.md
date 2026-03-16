@@ -1,156 +1,121 @@
 # 安全问题追踪文档
 
-> 最后更新: 2026-03-16 02:00 (每日安全测试)
+> 最后更新: 2026-03-14 02:00 (每日安全测试)
 
-## 📊 测试概览
+## 测试概览
 
-| 指标 | 值 |
-|------|-----|
-| 测试时间 | 2026-03-16 02:00:07 |
-| 目标 | http://localhost:3000 |
-| 测试耗时 | 2.53 秒 |
-| **CRITICAL** | 0 ✅ |
-| **HIGH** | 0 ✅ |
-| **MEDIUM** | 1 ⚠️ |
-| **LOW** | 2 ℹ️ |
-
-## 🔴 当前未解决问题
-
-### SEC-001: 超长输入导致服务器错误 (MEDIUM)
-
-| 属性 | 详情 |
+| 项目 | 结果 |
 |------|------|
-| **严重级别** | 🟡 MEDIUM |
-| **分类** | 输入验证 |
-| **发现时间** | 2026-03-16 02:00 |
-| **描述** | 发送 100KB 数据导致 500 错误 |
-| **影响** | 可能导致 DoS 攻击 |
-| **建议修复** | 限制请求体大小，验证输入长度 |
+| 测试时间 | 2026-03-14 02:00:08 |
+| 目标 | http://localhost:3000 |
+| 测试耗时 | 42.74 秒 |
+| CRITICAL | 0 |
+| HIGH | 0 |
+| MEDIUM | 1 |
+| LOW | 2 |
 
-**修复方案:**
+## 发现的问题
+
+### 🟡 SEC-001: 超长输入导致服务器错误 [MEDIUM]
+
+**分类**: 输入验证
+
+**描述**: 发送 100KB 数据导致 500 错误
+
+**影响**: 可能导致 DoS 攻击
+
+**建议修复方案**:
+- 在 Express/Nuxt 中配置请求体大小限制
+- 添加输入长度验证中间件
+- 对超长输入返回 413 (Payload Too Large) 而非 500
+
+**状态**: 🔴 待修复
+
+**修复代码示例**:
 ```typescript
-// 在 Express 中添加请求体大小限制
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ limit: '1mb', extended: true }));
-
-// 或在具体路由中验证
-if (req.body.length > MAX_INPUT_SIZE) {
-  return res.status(413).json({ error: '请求体过大' });
-}
+// nuxt.config.ts 或 server middleware
+export default defineNuxtConfig({
+  nitro: {
+    routeRules: {
+      '/api/**': {
+        bodyLimit: 1048576 // 1MB
+      }
+    }
+  }
+})
 ```
 
-**状态:** 🔄 待修复
+---
+
+### 🔵 SEC-002: 安全头配置 - HSTS [LOW]
+
+**分类**: 配置
+
+**描述**: Strict-Transport-Security 配置已存在，但测试脚本期望值设置可能有问题
+
+**当前配置**: `max-age=31536000; includeSubDomains; preload`
+
+**评估**: 配置实际上是正确的。HSTS 已启用，包含子域名和 preload。
+
+**状态**: ✅ 可忽略（测试脚本误报）
 
 ---
 
-### SEC-002: 安全头配置检测 (LOW)
+### 🔵 SEC-003: 安全头配置 - CSP [LOW]
 
-| 属性 | 详情 |
-|------|------|
-| **严重级别** | 🔵 LOW |
-| **分类** | 配置 |
-| **发现时间** | 2026-03-16 02:00 |
-| **描述** | Strict-Transport-Security 检测触发 |
-| **当前值** | `max-age=31536000; includeSubDomains; preload` |
-| **影响** | 安全保护可能不足（误报可能性高） |
-| **建议** | 确认 HSTS 配置符合预期 |
+**分类**: 配置
 
-**分析:** 当前 HSTS 配置实际上是合理的（1年有效期，包含子域名，预加载）。此检测可能是测试脚本的误报。
+**描述**: Content-Security-Policy 配置已存在
 
-**状态:** ✅ 确认安全（误报）
+**当前配置**:
+```
+default-src 'self';
+script-src 'self' 'unsafe-inline';
+style-src 'self' 'unsafe-inline';
+img-src 'self' data: https:;
+connect-src 'self' https://api.supabase.co https://kmbmfzehpjjctvuagecd.supabase.co;
+font-src 'self';
+object-src 'none';
+frame-ancestors 'none';
+base-uri 'self';
+form-action 'self';
+script-src-attr 'none';
+upgrade-insecure-requests
+```
 
----
+**评估**: CSP 配置相对完善。`unsafe-inline` 是为了兼容性，可考虑使用 nonce 替代。
 
-### SEC-003: CSP 配置检测 (LOW)
+**改进建议**:
+- 考虑使用 CSP nonce 替代 `unsafe-inline`
+- 添加 `report-uri` 或 `report-to` 用于违规报告
 
-| 属性 | 详情 |
-|------|------|
-| **严重级别** | 🔵 LOW |
-| **分类** | 配置 |
-| **发现时间** | 2026-03-16 02:00 |
-| **描述** | Content-Security-Policy 检测触发 |
-| **当前值** | 配置了完整的 CSP 策略 |
-| **影响** | 安全保护可能不足（误报可能性高） |
-| **建议** | 确认 CSP 配置符合预期 |
-
-**分析:** 当前 CSP 配置包含:
-- `default-src 'self'` - 默认只允许同源
-- `script-src 'self' 'unsafe-inline'` - 脚本同源+内联（开发需要）
-- `style-src 'self' 'unsafe-inline'` - 样式同源+内联
-- `img-src 'self' data: https:` - 图片允许同源、data、https
-- `connect-src 'self' https://api.supabase.co ...` - API 连接限制
-- `object-src 'none'` - 禁止 object/embed/applet
-- `frame-ancestors 'none'` - 防止点击劫持
-
-配置合理，此检测可能是测试脚本的误报。
-
-**状态:** ✅ 确认安全（误报）
+**状态**: 🟡 可选改进
 
 ---
 
-## ✅ 已解决问题
+## 通过的安全测试 ✅
 
-_暂无已解决问题_
-
----
-
-## 📝 测试覆盖范围
-
-本次安全测试覆盖以下攻击向量：
-
-1. **认证安全** ✅
-   - 受保护端点认证检查
-   - API Key 强度验证
-   - JWT Token 伪造防护
-
-2. **注入攻击** ✅
-   - SQL 注入
-   - NoSQL 注入
-   - 命令注入
-
-3. **权限提升** ✅
-   - 用户数据隔离
-   - 管理员端点访问控制
-
-4. **敏感信息泄露** ✅
-   - 响应数据扫描
-   - 错误信息泄露检查
-
-5. **输入验证** ⚠️
-   - JSON 注入
-   - Unicode 攻击
-   - **超长输入处理** (待优化)
-
-6. **配置安全** ℹ️
-   - .gitignore 配置
-   - CORS 配置
-   - 安全头配置
-
-7. **速率限制** ✅
-   - 请求频率限制生效
-
-8. **依赖安全** ✅
-   - 已知漏洞依赖检查
-
-9. **数据库安全** ✅
-   - 数据库访问控制
-
-10. **WebSocket 安全** ✅
-    - WebSocket 连接安全
+- ✅ 认证安全：受保护端点正确返回 401，API Key 非默认值，弱 Key 被拒绝，伪造 JWT 被拒绝
+- ✅ 注入攻击：SQL/NoSQL/命令注入测试通过
+- ✅ 权限隔离：用户数据隔离正常，管理员端点保护正常
+- ✅ 敏感信息：无敏感信息泄露
+- ✅ 速率限制：66/100 请求被限制，机制生效
+- ✅ 依赖安全：无已知漏洞依赖
+- ✅ 数据库安全：测试通过
+- ✅ WebSocket 安全：测试通过
 
 ---
 
-## 📅 历史记录
+## 历史记录
 
-| 日期 | CRITICAL | HIGH | MEDIUM | LOW | 状态 |
-|------|----------|------|--------|-----|------|
-| 2026-03-16 | 0 | 0 | 1 | 2 | ✅ 通过 |
-| 2026-03-15 | 0 | 0 | 1 | 2 | ✅ 通过 |
+| 日期 | 发现问题 | 修复状态 |
+|------|----------|----------|
+| 2026-03-14 | 1 MEDIUM + 2 LOW | 待修复 |
 
 ---
 
-## 🎯 下一步行动
+## 下一步行动
 
-1. [ ] 修复 SEC-001: 添加请求体大小限制
-2. [ ] 更新测试脚本，减少误报
-3. [ ] 持续监控安全状态
+1. [ ] 修复 SEC-001：添加请求体大小限制
+2. [ ] 更新测试脚本的期望值配置
+3. [ ] 考虑 CSP nonce 改进（低优先级）
