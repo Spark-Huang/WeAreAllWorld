@@ -6,37 +6,16 @@
 
 ```
 infra/
+├── database/           # 数据库 Schema 和迁移
+│   ├── schema.sql      # 主表结构
+│   ├── functions.sql   # 数据库函数
+│   ├── triggers.sql    # 触发器
+│   ├── rls-policies.sql # RLS 策略
+│   └── migrations/     # 迁移文件
 └── supabase/           # Supabase 配置
     └── config.toml     # Supabase CLI 配置
 ```
 
-## Supabase
+## 数据库
 
-Supabase 作为后端数据库和认证服务。
-
-### 配置
-
-```bash
-# 安装 Supabase CLI
-npm install -g supabase
-
-# 登录
-supabase login
-
-# 链接项目
-supabase link --project-ref <project-ref>
-
-# 推送数据库变更
-supabase db push
-```
-
-### 数据库表
-
-主要表结构：
-- `users` - 用户表
-- `ai_partners` - AI 伙伴表
-- `dialogues` - 对话记录表
-- `story_progress` - 剧情进度表
-- `contribution_records` - 贡献值记录表
-
-详见 `docs/sql/` 目录。
+详见 `database/README.md`
