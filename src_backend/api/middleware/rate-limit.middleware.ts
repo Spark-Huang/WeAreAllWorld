@@ -9,15 +9,15 @@ import { Request, Response, NextFunction } from 'express';
 // 存储认证失败的 IP 地址
 const authFailureStore = new Map<string, { count: number; lastFailure: number }>();
 
-// 认证失败阈值
-const AUTH_FAILURE_THRESHOLD = 5;
+// 认证失败阈值 - 降低以更快检测暴力破解
+const AUTH_FAILURE_THRESHOLD = 3;
 const AUTH_FAILURE_WINDOW_MS = 15 * 60 * 1000; // 15 分钟
 const AUTH_LOCKOUT_MS = 30 * 60 * 1000; // 锁定 30 分钟
 
 /**
- * 记录认证失败
+ * 记录认证失败并返回是否应该锁定
  */
-export function recordAuthFailure(ip: string): void {
+export function recordAuthFailure(ip: string): boolean {
   const now = Date.now();
   const record = authFailureStore.get(ip);
   
@@ -29,13 +29,18 @@ export function recordAuthFailure(ip: string): void {
     } else {
       // 重置计数
       authFailureStore.set(ip, { count: 1, lastFailure: now });
+      return false;
     }
   } else {
     authFailureStore.set(ip, { count: 1, lastFailure: now });
+    return false;
   }
   
   // 清理过期记录
   cleanupAuthFailureStore();
+  
+  // 返回是否达到锁定阈值
+  return record.count >= AUTH_FAILURE_THRESHOLD;
 }
 
 /**
@@ -99,11 +104,11 @@ export function authRateLimitMiddleware(
 
 /**
  * 通用 API 速率限制
- * 每个 IP 每分钟最多 200 次请求
+ * 每个 IP 每分钟最多 60 次请求
  */
 export const generalRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 分钟
-  max: 200, // 每个 IP 最多 200 次请求
+  max: 60, // 每个 IP 最多 60 次请求
   message: {
     error: 'Too many requests',
     message: '请求过于频繁，请稍后再试'
@@ -137,11 +142,11 @@ export const strictRateLimiter = rateLimit({
 
 /**
  * 认证端点速率限制
- * 每个 IP 每分钟最多 100 次请求
+ * 每个 IP 每分钟最多 10 次请求（严格限制防止暴力破解）
  */
 export const authRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 分钟
-  max: 100, // 每个 IP 最多 100 次认证请求
+  max: 10, // 每个 IP 最多 10 次认证请求
   message: {
     error: 'Too many authentication attempts',
     message: '认证请求过于频繁，请稍后再试'

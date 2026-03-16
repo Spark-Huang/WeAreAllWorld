@@ -5,6 +5,7 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../index';
 import { UserService } from '../../services/user.service';
+import { getOpenClawProvisionService } from '../../services/openclaw-provision.service';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router: Router = Router();
@@ -86,6 +87,24 @@ router.post('/ensure-user', authMiddleware, async (req: Request, res: Response) 
       return;
     }
     
+    // 🆕 异步创建 OpenClaw 实例（不阻塞响应）
+    setImmediate(async () => {
+      try {
+        const openclawService = getOpenClawProvisionService();
+        if (openclawService) {
+          console.log(`🚀 为用户 ${userId} 创建 OpenClaw 实例...`);
+          const result = await openclawService.provisionForUser(userId);
+          if (result.success) {
+            console.log(`✅ 用户 ${userId} OpenClaw 实例创建成功: ${result.instance?.podName}`);
+          } else {
+            console.warn(`⚠️ 用户 ${userId} OpenClaw 实例创建失败:`, result.error);
+          }
+        }
+      } catch (err) {
+        console.warn('OpenClaw 实例创建异常:', err);
+      }
+    });
+    
     res.json({ success: true, isNewUser: true });
   } catch (err) {
     console.error('Ensure user error:', err);
@@ -162,6 +181,24 @@ router.post('/create-user', async (req: Request, res: Response) => {
         .from('ai_partners')
         .insert({ user_id: userId, name: '小零' });
     }
+    
+    // 🆕 异步创建 OpenClaw 实例（不阻塞响应）
+    setImmediate(async () => {
+      try {
+        const openclawService = getOpenClawProvisionService();
+        if (openclawService) {
+          console.log(`🚀 为用户 ${userId} 创建 OpenClaw 实例...`);
+          const result = await openclawService.provisionForUser(userId);
+          if (result.success) {
+            console.log(`✅ 用户 ${userId} OpenClaw 实例创建成功: ${result.instance?.podName}`);
+          } else {
+            console.warn(`⚠️ 用户 ${userId} OpenClaw 实例创建失败:`, result.error);
+          }
+        }
+      } catch (err) {
+        console.warn('OpenClaw 实例创建异常:', err);
+      }
+    });
     
     res.json({ success: true, message: 'User created' });
   } catch (err) {

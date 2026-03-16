@@ -5,7 +5,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { createClient } from '@supabase/supabase-js';
-import { recordAuthFailure } from './rate-limit.middleware';
+import { recordAuthFailure, isAuthLocked } from './rate-limit.middleware';
 
 // 扩展 Request 类型
 declare global {
@@ -30,6 +30,27 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUP
 const dbClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 /**
+ * 处理认证失败 - 记录失败并返回适当的响应
+ */
+function handleAuthFailure(
+  res: Response, 
+  clientIp: string, 
+  message: string,
+  errorCode: string = 'Authentication failed'
+): void {
+  const shouldLock = recordAuthFailure(clientIp);
+  if (shouldLock) {
+    res.status(429).json({
+      error: 'Too many authentication failures',
+      message: '您的账户已被临时锁定，请 30 分钟后再试',
+      retryAfter: 1800
+    });
+  } else {
+    res.status(401).json({ error: errorCode, message });
+  }
+}
+
+/**
  * 认证中间件
  * 优先级：API Key > Supabase JWT
  */
@@ -38,21 +59,26 @@ export async function authMiddleware(
   res: Response,
   next: NextFunction
 ): Promise<void> {
+  const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+  
+  // 首先检查 IP 是否已被锁定
+  if (isAuthLocked(clientIp)) {
+    res.status(429).json({
+      error: 'Too many authentication failures',
+      message: '您的账户已被临时锁定，请 30 分钟后再试',
+      retryAfter: 1800
+    });
+    return;
+  }
+  
   try {
-    // 调试日志
-    console.log('[AUTH DEBUG] Headers:', JSON.stringify(req.headers, null, 2));
-    console.log('[AUTH DEBUG] API_KEY env:', process.env.API_KEY);
-    
     // 方式1: API Key 认证（用于服务端调用或测试）
     const apiKey = req.headers['x-api-key'] as string;
     const validApiKey = process.env.API_KEY || 'weareallworld_dev_key_2026';
-    console.log('[AUTH DEBUG] Received apiKey:', apiKey);
-    console.log('[AUTH DEBUG] Valid apiKey:', validApiKey);
     
     if (apiKey && apiKey === validApiKey) {
       // API Key 认证通过，需要提供用户ID
       const userId = req.headers['x-user-id'] as string;
-      console.log('[AUTH DEBUG] userId:', userId);
       
       if (userId) {
         // 验证用户是否存在（允许新用户通过）
@@ -61,8 +87,6 @@ export async function authMiddleware(
           .select('id, telegram_user_id')
           .eq('id', userId)
           .single();
-        
-        console.log('[AUTH DEBUG] User from DB:', user);
         
         // 即使 users 表中没有记录，也允许通过认证（用于新用户注册）
         req.user = {
@@ -73,8 +97,7 @@ export async function authMiddleware(
         return;
       }
       // 认证失败：缺少用户 ID
-      recordAuthFailure(req.ip || req.socket.remoteAddress || 'unknown');
-      res.status(401).json({ error: 'Invalid user ID' });
+      handleAuthFailure(res, clientIp, 'Invalid user ID', 'Invalid user ID');
       return;
     }
     
@@ -83,8 +106,7 @@ export async function authMiddleware(
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       // 认证失败：缺少授权头
-      recordAuthFailure(req.ip || req.socket.remoteAddress || 'unknown');
-      res.status(401).json({ error: 'Missing authorization. Use Bearer token or API key.' });
+      handleAuthFailure(res, clientIp, 'Use Bearer token or API key', 'Missing authorization');
       return;
     }
     
@@ -96,8 +118,7 @@ export async function authMiddleware(
     if (error || !user) {
       console.error('JWT validation error:', error);
       // 认证失败：JWT 无效
-      recordAuthFailure(req.ip || req.socket.remoteAddress || 'unknown');
-      res.status(401).json({ error: 'Invalid or expired token' });
+      handleAuthFailure(res, clientIp, 'Token is invalid or expired', 'Invalid or expired token');
       return;
     }
     
