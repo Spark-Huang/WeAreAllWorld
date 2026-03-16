@@ -2,7 +2,6 @@
   "name": "weareallworld",
   "version": "1.0.0",
   "description": "大同世界 - AI nurturing + text adventure + practical assistant platform",
-  "license": "BSL-1.1",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -22,7 +21,8 @@
     "test:security": "npx ts-node tests/regression/security/security-test.ts",
     "test:all": "npx ts-node tests/run-all-tests.ts",
     "lint": "eslint src/**/*.ts",
-    "test:regression": "pnpm test:all"
+    "test:regression": "pnpm test:all",
+    "test:coverage": "jest --coverage --coverageReporters=lcov --coverageReporters=text"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

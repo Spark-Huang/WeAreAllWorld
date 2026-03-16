@@ -1,0 +1,24 @@
+# CODEOWNERS - 代码所有者
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# 核心代码
+/src_backend/ @Spark-Huang
+/src_frontend/ @Spark-Huang
+/src_admin/ @Spark-Huang
+
+# 测试
+/tests/ @Spark-Huang
+
+# 文档
+/docs/ @Spark-Huang
+/README.md @Spark-Huang
+/CONTRIBUTING.md @Spark-Huang
+/SECURITY.md @Spark-Huang
+
+# CI/CD
+/.github/ @Spark-Huang
+
+# 配置
+/package.json @Spark-Huang
+/tsconfig.json @Spark-Huang
+/.env.example @Spark-Huang

@@ -57,7 +57,7 @@
 
 ## 已知安全问题
 
-详见 `docs/contribution-evaluation/SECURITY_ISSUES.md`
+详见 `docs/SECURITY_ISSUES.md`
 
 ---
 
