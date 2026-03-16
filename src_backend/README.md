@@ -63,5 +63,5 @@ pnpm start
 | `PORT` | 服务端口 (默认 3000) |
 | `SUPABASE_URL` | Supabase 项目 URL |
 | `SUPABASE_ANON_KEY` | Supabase 匿名密钥 |
-| `HWC_MAAS_API_KEY` | 华为云 GLM-5 API Key |
-| `HWC_MAAS_BASE_URL` | 华为云 API 地址 |
+| `LLM_API_KEY` | LLM API Key (OpenAI 兼容) |
+| `LLM_API_URL` | LLM API 地址 |

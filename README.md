@@ -60,9 +60,9 @@
 | **后端** | Node.js + Express + TypeScript |
 | **数据库** | Supabase (PostgreSQL + Row Level Security) |
 | **AI 运行时** | OpenClaw (Kubernetes Pod 池) |
-| **LLM** | GLM-5 (华为云 ModelArts MAAS) |
+| **LLM** | GLM-5 (OpenAI API 兼容) |
 | **Telegram** | grammy 框架 |
-| **容器镜像** | 华为云 SWR |
+| **容器镜像** | Docker / Kubernetes |
 
 ## 项目结构
 

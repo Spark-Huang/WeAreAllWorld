@@ -38,7 +38,7 @@ export class OpenClawProvisionService {
     supabaseUrl: string,
     supabaseKey: string,
     namespace: string = 'we-are-all-world',
-    baseImage: string = 'swr.cn-southwest-2.myhuaweicloud.com/qinghua/openclaw:2026.3.8',
+    baseImage: string = 'openclaw/openclaw:latest',
     baseUrl: string = 'openclaw.weareall.world'
   ) {
     this.supabase = createClient(supabaseUrl, supabaseKey);
@@ -210,13 +210,13 @@ spec:
               name: openclaw-api-keys
               key: openai-api-key
               optional: true
-        - name: HWC_MAAS_API_KEY
+        - name: LLM_API_KEY
           valueFrom:
             secretKeyRef:
               name: openclaw-api-keys
               key: hwc-maas-api-key
               optional: true
-        - name: HWC_MAAS_BASE_URL
+        - name: LLM_API_URL
           value: "https://api.modelarts-maas.com/openai/v1"
         resources:
           requests:
@@ -327,7 +327,7 @@ export function getOpenClawProvisionService(): OpenClawProvisionService | null {
       supabaseUrl,
       supabaseKey,
       process.env.K8S_NAMESPACE || 'we-are-all-world',
-      process.env.OPENCLAW_IMAGE || 'swr.cn-southwest-2.myhuaweicloud.com/qinghua/openclaw:2026.3.8',
+      process.env.OPENCLAW_IMAGE || 'openclaw/openclaw:latest',
       process.env.OPENCLAW_BASE_URL || 'openclaw.weareall.world'
     );
   }
