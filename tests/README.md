@@ -4,6 +4,13 @@
 
 ```
 tests/
+├── scripts/              # 测试脚本
+│   ├── api-test.sh
+│   ├── security-test.ts
+│   ├── comprehensive-test.ts
+│   └── run-all-tests.sh
+├── frontend/             # 前端测试
+│   └── frontend-test.ts
 ├── regression/           # 回归测试
 │   ├── unit/            # 单元测试
 │   │   └── unit-test.ts
@@ -13,9 +20,12 @@ tests/
 │   ├── security/        # 安全测试
 │   │   └── security-test.ts
 │   └── performance/     # 性能测试
-├── fixtures/            # 测试数据
-├── reports/             # 测试报告
-└── run-all-tests.ts     # 完整测试套件
+├── fixtures/             # 测试数据
+├── results/              # 测试结果
+├── reports/              # 测试报告
+├── screenshots/          # 截图
+├── run-all-tests.ts      # 完整测试套件
+└── test-config.ts        # 测试配置
 ```
 
 ## 运行测试
