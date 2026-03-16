@@ -259,7 +259,7 @@ Business Source License 1.1 (BSL 1.1)
 - ✅ 个人使用：免费
 - ✅ 内部商业使用：免费（不与本项目竞争）
 - ⚠️ 竞争性商业使用：需要购买许可
-- ✅ 4 年后自动转为 Apache 2.0
+- ✅ 4 年后自动转为 AGPL v3
 
 详见 [LICENSE](./LICENSE) 文件。
 
