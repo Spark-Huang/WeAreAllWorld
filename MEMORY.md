@@ -3,7 +3,7 @@
 ## 项目：大同世界 (WeAreAllWorld)
 
 ### 项目概述
-- **名称**: 大同世界 (原名: 大同世界)
+- **名称**: 大同世界
 - **GitHub**: https://github.com/Spark-Huang/WeAreAllWorld
 - **路径**: `/root/.openclaw/workspace/WeAreAllWorld`
 - **技术栈**: TypeScript, Supabase, Node.js, React, Kubernetes
@@ -40,29 +40,29 @@ WeAreAllWorld/
 
 ### Kubernetes 部署
 - **Namespace**: `we-are-all-world`
-- **OpenClaw**: 每用户专属 Pod，使用华为云 GLM-5 模型
-- **API URL**: `https://api.modelarts-maas.com/openai/v1`
-- **Provider**: `hwc_maas/glm-5`
+- **OpenClaw**: 每用户专属 Pod
+- **LLM**: OpenAI API 兼容模型
 
 ### 环境变量
 ```
-API_KEY=weareallworld_dev_key_2026
-SUPABASE_URL=https://kmbmfzehpjjctvuagecd.supabase.co
-HWC_MAAS_API_KEY=-FGQj0REdnpigSmUjjHH6O4h7Z-anoAOCiMGhzbdgZIw97SHtfnXtYERnbvuxyGzqNKgX2l5d7n4wf8kikhuhg
-HWC_MAAS_BASE_URL=https://api.modelarts-maas.com/openai/v1
+API_KEY=your_api_key
+SUPABASE_URL=your_supabase_url
+LLM_API_KEY=your_llm_api_key
+LLM_API_URL=your_llm_api_url
 ```
 
-### 测试状态 (2026-03-10)
-- **单元测试**: 55/55 通过 (100%)
+### 测试状态 (2026-03-16)
+- **单元测试**: 30/30 通过 (100%)
 - **端到端测试**: 26/26 通过 (100%)
 - **用户旅程**: 全流程通过
 
 ### 已完成
 - [x] 目录结构重构
 - [x] OpenClaw K8s 部署
-- [x] 华为云 GLM-5 模型集成
+- [x] LLM 模型集成
 - [x] API Key 认证修复
 - [x] 完整测试套件通过
+- [x] 开源准备工作
 
 ### 待办
 - [ ] 配置生产环境部署

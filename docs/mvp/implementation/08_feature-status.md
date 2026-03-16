@@ -94,7 +94,7 @@
 - [x] OpenClaw Pod 部署
 - [x] 每用户专属 Pod 支持
 - [x] Kubernetes 部署
-- [x] 华为云 SWR 镜像
+- [x] Docker 镜像构建与推送
 
 ## 🧪 测试状态
 

@@ -35,7 +35,7 @@
 - 前端：Vite + React + Tailwind CSS
 - 后端：Node.js + Express + TypeScript
 - 数据库：Supabase (PostgreSQL)
-- LLM：华为云 GLM-5
+- LLM：GLM-5 (OpenAI API 兼容)
 - 容器：Kubernetes + Docker
 
 ---
