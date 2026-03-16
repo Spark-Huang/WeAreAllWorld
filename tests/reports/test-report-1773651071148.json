@@ -1,0 +1,23 @@
+[
+  {
+    "name": "单元测试",
+    "passed": 0,
+    "failed": 0,
+    "duration": 1419,
+    "status": "FAIL"
+  },
+  {
+    "name": "端到端测试",
+    "passed": 0,
+    "failed": 0,
+    "duration": 30966,
+    "status": "PASS"
+  },
+  {
+    "name": "安全测试",
+    "passed": 0,
+    "failed": 0,
+    "duration": 1504,
+    "status": "FAIL"
+  }
+]
