@@ -24,7 +24,7 @@
 **执行脚本：**
 ```bash
 cd /root/.openclaw/workspace/WeAreAllWorld
-pnpm exec ts-node scripts/security-test.ts
+pnpm exec ts-node tests/scripts/security-test.ts
 ```
 
 **失败处理：**
@@ -53,7 +53,7 @@ pnpm exec ts-node scripts/security-test.ts
 **执行脚本：**
 ```bash
 cd /root/.openclaw/workspace/WeAreAllWorld
-pnpm exec ts-node scripts/db-integrity-check.ts
+pnpm exec ts-node tests/scripts/db-integrity-check.ts
 ```
 
 ---

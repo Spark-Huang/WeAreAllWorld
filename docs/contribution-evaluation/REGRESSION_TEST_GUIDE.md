@@ -114,7 +114,7 @@ END IF;
 
 | 文件 | 说明 |
 |------|------|
-| `scripts/security-test.ts` | 测试套件主文件 |
+| `tests/scripts/security-test.ts` | 测试套件主文件 |
 | `src/contribution-evaluation/database/schema.sql` | 数据库表结构 |
 | `src/contribution-evaluation/database/functions.sql` | 数据库函数 |
 | `src/contribution-evaluation/database/rls-policies.sql` | RLS安全策略 |

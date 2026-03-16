@@ -91,9 +91,12 @@ WeAreAllWorld/
 │   ├── mvp/               # MVP 文档
 │   ├── sql/               # 数据库迁移
 │   └── ...
-└── tests/                 # 测试
-    ├── regression/        # 回归测试
-    └── screenshots/       # 截图
+├── tests/                 # 测试（统一目录）
+│   ├── scripts/           # 测试脚本
+│   ├── frontend/          # 前端测试
+│   ├── regression/        # 回归测试
+│   ├── results/           # 测试结果
+│   └── screenshots/       # 截图
 ```
 
 ## 快速开始

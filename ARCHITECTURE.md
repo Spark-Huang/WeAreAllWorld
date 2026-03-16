@@ -81,10 +81,11 @@ WeAreAllWorld/
 │   │       └── supabase.ts
 │   ├── vite.config.ts
 │   └── tailwind.config.js
-├── scripts/                     # 脚本
-│   ├── unit-test.ts
-│   ├── api-test.sh
-│   └── security-test.ts
+├── tests/                       # 测试（统一目录）
+│   ├── scripts/                 # 测试脚本
+│   ├── frontend/                # 前端测试
+│   ├── regression/              # 回归测试
+│   └── results/                 # 测试结果
 ├── ecosystem.config.json        # PM2 配置
 ├── .env                         # 环境变量
 └── package.json

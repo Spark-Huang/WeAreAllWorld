@@ -29,8 +29,12 @@ WeAreAllWorld/
 │   ├── admin/            # Vite 管理前端
 │   ├── admin-panel/      # 管理后台后端 (独立部署)
 │   └── web/              # Web Admin UI
-├── scripts/              # 测试脚本
-├── memory/               # 每日工作日志
+├── tests/                # 测试（统一目录）
+│   ├── scripts/          # 测试脚本
+│   ├── frontend/         # 前端测试
+│   ├── regression/       # 回归测试
+│   ├── results/          # 测试结果
+│   └── ...
 └── docs/                 # 文档
 ```
 

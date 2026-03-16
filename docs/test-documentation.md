@@ -42,7 +42,7 @@
 
 ### 2.1 单元测试
 
-**测试文件**: `scripts/unit-test.ts`
+**测试文件**: `tests/scripts/unit-test.ts`
 **执行命令**: `pnpm test:unit`
 
 | 测试模块 | 测试数量 | 通过率 |
@@ -423,7 +423,7 @@ curl "http://localhost:3000/api/v1/story/available" \
 
 ### A. 测试脚本
 
-完整测试脚本位于: `scripts/run-all-tests.sh`
+完整测试脚本位于: `tests/scripts/run-all-tests.sh`
 
 ### B. 测试数据
 

@@ -66,7 +66,7 @@ ALTER TABLE milestones ENABLE ROW LEVEL SECURITY;
 修复后，重新运行安全测试：
 
 ```bash
-npx ts-node scripts/security-test.ts
+npx ts-node tests/scripts/security-test.ts
 ```
 
 确保 RLS 防护测试通过。
@@ -190,7 +190,7 @@ $$ LANGUAGE plpgsql;
 export SUPABASE_DB_URL="postgresql://postgres.[project-ref]:[password]@..."
 
 # 执行部署脚本
-npx ts-node scripts/deploy-rls-pg.ts
+npx ts-node tests/scripts/deploy-rls-pg.ts
 ```
 
 ### 方法3: 使用psql
