@@ -21,15 +21,20 @@ build/
 Thumbs.db
 
 # Logs
+.logs/
 logs/
 *.log
 npm-debug.log*
+
+# Memory
+.memory/
+memory/
 
 # Test
 coverage/
 
 # Supabase
-supabase/.temp/
+infra/supabase/.temp/
 
 # Misc
 *.tgz

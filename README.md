@@ -87,16 +87,19 @@ WeAreAllWorld/
 │   ├── admin/             # Vite 管理前端
 │   ├── admin-panel/       # Admin panel 后端
 │   └── web/               # Web Admin UI (含 Dockerfile)
-├── docs/                  # 文档
-│   ├── mvp/               # MVP 文档
-│   ├── sql/               # 数据库迁移
-│   └── ...
+├── infra/                 # 基础设施配置
+│   └── supabase/          # Supabase 配置
 ├── tests/                 # 测试（统一目录）
 │   ├── scripts/           # 测试脚本
 │   ├── frontend/          # 前端测试
 │   ├── regression/        # 回归测试
 │   ├── results/           # 测试结果
 │   └── screenshots/       # 截图
+├── docs/                  # 文档
+│   ├── mvp/               # MVP 文档
+│   ├── sql/               # 数据库迁移
+│   └── ...
+└── assets/                # 美术资源
 ```
 
 ## 快速开始
