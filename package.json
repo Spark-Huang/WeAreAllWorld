@@ -2,6 +2,7 @@
   "name": "weareallworld",
   "version": "1.0.0",
   "description": "大同世界 - AI nurturing + text adventure + practical assistant platform",
+  "license": "BSL-1.1",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
