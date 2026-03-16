@@ -253,12 +253,15 @@ kubectl apply -f k8s/api-deployment.yaml
 
 ## 许可证
 
-GNU General Public License v3.0 (GPL-3.0)
+Business Source License 1.1 (BSL 1.1)
 
-本项目采用 GPL-3.0 许可证，这意味着：
-- ✅ 可以自由使用、修改和分发
-- ✅ 修改后的代码必须以相同许可证开源
-- ✅ 必须保留原作者的版权声明
+本项目采用 BSL 1.1 许可证：
+- ✅ 个人使用：免费
+- ✅ 内部商业使用：免费（不与本项目竞争）
+- ⚠️ 竞争性商业使用：需要购买许可
+- ✅ 4 年后自动转为 Apache 2.0
+
+详见 [LICENSE](./LICENSE) 文件。
 
 ## 联系方式
 
