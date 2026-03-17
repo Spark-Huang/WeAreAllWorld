@@ -228,7 +228,7 @@ export class CentralEvaluationService {
     // 获取所有休眠中的AI
     const { data: dormantAIs, error } = await this.supabase
       .from('ai_partners')
-      .select('user_id, dormant_since')
+      .select('user_id, hibernated_since')
       .eq('status', 'dormant');
     
     if (error) {
@@ -386,7 +386,7 @@ export class CentralEvaluationService {
   }[]> {
     const { data, error } = await this.supabase
       .from('ai_partners')
-      .select('user_id, dormant_since, memory_points')
+      .select('user_id, hibernated_since, memory_points')
       .eq('status', 'dormant');
     
     if (error) {
@@ -396,9 +396,9 @@ export class CentralEvaluationService {
     
     return (data || []).map(ai => ({
       userId: ai.user_id,
-      dormantSince: ai.dormant_since,
+      dormantSince: ai.hibernated_since,
       memoryPoints: ai.memory_points,
-      daysDormant: Math.floor((Date.now() - new Date(ai.dormant_since).getTime()) / (1000 * 60 * 60 * 24))
+      daysDormant: Math.floor((Date.now() - new Date(ai.hibernated_since).getTime()) / (1000 * 60 * 60 * 24))
     }));
   }
   

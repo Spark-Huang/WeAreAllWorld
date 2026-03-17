@@ -45,42 +45,24 @@ export async function authMiddleware(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  // 首先检查是否被锁定
   const ip = getClientIp(req);
   
   try {
-    // 调试日志
-    console.log('[AUTH DEBUG] Headers:', JSON.stringify(req.headers, null, 2));
-    console.log('[AUTH DEBUG] API_KEY env:', process.env.API_KEY);
-    
     // 方式1: API Key 认证（用于服务端调用或测试）
     const apiKey = req.headers['x-api-key'] as string;
     const validApiKey = process.env.API_KEY || 'weareallworld_dev_key_2026';
-    console.log('[AUTH DEBUG] Received apiKey:', apiKey);
-    console.log('[AUTH DEBUG] Valid apiKey:', validApiKey);
     
     if (apiKey && apiKey === validApiKey) {
       // API Key 认证通过，需要提供用户ID
       const userId = req.headers['x-user-id'] as string;
-      console.log('[AUTH DEBUG] userId:', userId);
       
       if (userId) {
-        // 验证用户是否存在（允许新用户通过）
-        const { data: user } = await dbClient
-          .from('users')
-          .select('id, telegram_user_id')
-          .eq('id', userId)
-          .single();
-        
-        console.log('[AUTH DEBUG] User from DB:', user);
-        
         // 认证成功，清除失败记录
         handleAuthSuccess(req);
         
-        // 即使 users 表中没有记录，也允许通过认证（用于新用户注册）
+        // 直接设置用户信息，不查询数据库（提升性能）
         req.user = {
-          id: userId,
-          telegramUserId: user?.telegram_user_id
+          id: userId
         };
         next();
         return;

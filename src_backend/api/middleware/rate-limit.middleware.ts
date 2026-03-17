@@ -15,6 +15,65 @@ const AUTH_FAILURE_WINDOW_MS = 15 * 60 * 1000; // 15 分钟
 const AUTH_LOCKOUT_MS = 30 * 60 * 1000; // 锁定 30 分钟
 
 /**
+ * 获取客户端 IP
+ */
+export function getClientIp(req: Request): string {
+  return req.ip || req.socket.remoteAddress || 'unknown';
+}
+
+/**
+ * 记录认证失败并返回失败信息
+ */
+export function handleAuthFailure(req: Request): { remainingAttempts: number } {
+  const ip = getClientIp(req);
+  const now = Date.now();
+  const record = authFailureStore.get(ip);
+  
+  let count = 1;
+  if (record) {
+    if (now - record.lastFailure < AUTH_FAILURE_WINDOW_MS) {
+      count = record.count + 1;
+    }
+  }
+  
+  authFailureStore.set(ip, { count, lastFailure: now });
+  cleanupAuthFailureStore();
+  
+  const remaining = Math.max(0, AUTH_FAILURE_THRESHOLD - count);
+  return { remainingAttempts: remaining };
+}
+
+/**
+ * 认证成功，清除失败记录
+ */
+export function handleAuthSuccess(req: Request): void {
+  const ip = getClientIp(req);
+  authFailureStore.delete(ip);
+}
+
+/**
+ * 认证失败保护中间件
+ */
+export function authFailureGuard(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  const ip = getClientIp(req);
+  
+  if (isAuthLocked(ip)) {
+    res.status(429).json({
+      error: 'Too many authentication failures',
+      message: '您的账户已被临时锁定，请 30 分钟后再试',
+      retryAfter: AUTH_LOCKOUT_MS / 1000
+    });
+    return;
+  }
+  
+  next();
+}
+
+/**
  * 记录认证失败并返回是否应该锁定
  */
 export function recordAuthFailure(ip: string): boolean {

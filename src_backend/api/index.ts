@@ -14,6 +14,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // 路由
 import { userRouter } from './routes/user.routes';
+import { authRouter } from './routes/auth.routes';
 import { aiPartnerRouter } from './routes/ai-partner.routes';
 import { dialogueRouter } from './routes/dialogue.routes';
 import { statsRouter } from './routes/stats.routes';
@@ -33,9 +34,8 @@ import { asyncQualityEvaluationService } from '../contribution-evaluation/servic
 // 中间件
 import { authMiddleware } from './middleware/auth.middleware';
 import { 
-  globalRateLimiter, 
-  authRateLimiter, 
-  authFailureGuard 
+  generalRateLimiter, 
+  authRateLimiter
 } from './middleware/rate-limit.middleware';
 
 const app: Express = express();
@@ -98,11 +98,61 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-app.use(express.json({ limit: '10kb' })); // 限制请求体大小
+// 检查请求体大小 - 防止超大请求（在 body-parser 之前）
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const contentLength = parseInt(req.headers['content-length'] || '0', 10);
+  const MAX_SIZE = 10 * 1024; // 10KB
+  
+  if (contentLength > MAX_SIZE) {
+    res.status(413).json({
+      error: 'Payload Too Large',
+      message: '请求体大小超过限制（最大 10KB）'
+    });
+    return;
+  }
+  next();
+});
+
+// 自定义 JSON 解析中间件 - 捕获语法错误
+app.use((req: Request, res: Response, next: NextFunction) => {
+  // 只处理有 Content-Type: application/json 的请求
+  const contentType = req.headers['content-type'];
+  if (contentType && contentType.includes('application/json')) {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => {
+      if (body) {
+        try {
+          (req as any).body = JSON.parse(body);
+          (req as any).rawBody = Buffer.from(body);
+        } catch (e) {
+          res.status(400).json({
+            error: 'Bad Request',
+            message: '无效的 JSON 格式'
+          });
+          return;
+        }
+      }
+      next();
+    });
+    req.on('error', (e) => {
+      res.status(400).json({
+        error: 'Bad Request',
+        message: '请求体读取失败'
+      });
+      return;
+    });
+  } else {
+    next();
+  }
+});
+
+// 使用 express.json() 作为备用（但自定义中间件已经处理了 JSON）
+app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // 全局速率限制 - 防止 DoS 攻击
-app.use(globalRateLimiter);
+app.use(generalRateLimiter);
 
 // 健康检查
 app.get('/health', (_req: Request, res: Response) => {
@@ -164,7 +214,8 @@ app.get('/', (_req: Request, res: Response) => {
 const API_PREFIX = '/api/v1';
 
 // 公开路由（无需认证）- 添加认证速率限制
-app.use(`${API_PREFIX}/auth`, authRateLimiter, authFailureGuard, userRouter);
+// 使用独立的 authRouter，不使用 authMiddleware
+app.use(`${API_PREFIX}/auth`, authRateLimiter, authRouter);
 
 // 受保护路由（需要认证）
 app.use(`${API_PREFIX}/user`, authMiddleware, userRouter);
@@ -195,8 +246,47 @@ app.use((_req: Request, res: Response) => {
 });
 
 // 错误处理
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('API Error:', err);
+app.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
+  // 调试：打印完整错误对象
+  console.error('API Error:', JSON.stringify({
+    name: err.name,
+    message: err.message,
+    type: (err as any).type,
+    status: (err as any).status,
+    statusCode: (err as any).statusCode
+  }));
+  
+  // 处理 JSON 解析错误
+  if (
+    err.name === 'SyntaxError' ||
+    err.message?.includes('Unexpected token') ||
+    err.message?.includes('JSON') ||
+    (err as any).status === 400 ||
+    (err as any).statusCode === 400
+  ) {
+    res.status(400).json({
+      error: 'Bad Request',
+      message: '无效的 JSON 格式'
+    });
+    return;
+  }
+  
+  // 处理 payload too large 错误
+  if (
+    err.name === 'PayloadTooLargeError' ||
+    err.message?.includes('entity too large') ||
+    err.message?.includes('request entity too large') ||
+    (err as any).type === 'entity.too.large' ||
+    (err as any).status === 413 ||
+    (err as any).statusCode === 413
+  ) {
+    res.status(413).json({
+      error: 'Payload Too Large',
+      message: '请求体大小超过限制（最大 10KB）'
+    });
+    return;
+  }
+  
   res.status(500).json({ 
     error: 'Internal Server Error',
     message: process.env.NODE_ENV === 'development' ? err.message : undefined
