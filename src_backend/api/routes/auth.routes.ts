@@ -45,18 +45,22 @@ router.post('/register', async (req: Request, res: Response) => {
 /**
  * POST /api/v1/auth/ensure-user
  * 确保用户记录存在（登录时调用）
- * 零门槛注册：只需要 telegramUserId
+ * 支持两种方式：
+ * 1. 零门槛注册：只需要 telegramUserId
+ * 2. 已认证用户：通过 X-User-ID header
  */
 router.post('/ensure-user', async (req: Request, res: Response) => {
   console.log('[ENSURE-USER] Request received:', {
     telegramUserId: req.body?.telegramUserId,
+    xUserId: req.headers['x-user-id'],
     headers: req.headers['x-api-key']
   });
   
   try {
     const { telegramUserId, telegramUsername } = req.body;
+    const xUserId = req.headers['x-user-id'] as string;
     
-    // 零门槛注册：只需要 telegramUserId
+    // 方式1: 零门槛注册（只需要 telegramUserId）
     if (telegramUserId) {
       console.log('[ENSURE-USER] Zero-barrier registration for:', telegramUserId);
       const userService = new UserService(SUPABASE_URL, SUPABASE_KEY);
@@ -73,9 +77,74 @@ router.post('/ensure-user', async (req: Request, res: Response) => {
       return;
     }
     
-    // 如果没有 telegramUserId，返回错误
+    // 方式2: 已认证用户（通过 X-User-ID header）
+    if (xUserId) {
+      console.log('[ENSURE-USER] Ensuring user exists for:', xUserId);
+      
+      // 检查用户是否已存在
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', xUserId)
+        .single();
+      
+      if (existingUser) {
+        // 检查 AI 伙伴是否存在
+        const { data: existingPartner } = await supabase
+          .from('ai_partners')
+          .select('*')
+          .eq('user_id', xUserId)
+          .single();
+        
+        res.json({
+          success: true,
+          data: {
+            user: { id: xUserId },
+            aiPartner: existingPartner,
+            isNewUser: false
+          }
+        });
+        return;
+      }
+      
+      // 创建用户记录（触发器会自动创建AI伙伴）
+      const { error } = await supabase
+        .from('users')
+        .insert({
+          id: xUserId,
+          telegram_user_id: Math.floor(Math.random() * 1000000000),
+          telegram_username: telegramUsername || 'web_user',
+          onboarding_step: 0,
+          onboarding_completed: false
+        });
+      
+      if (error) {
+        console.error('Create user error:', error);
+        res.status(500).json({ error: 'Failed to create user' });
+        return;
+      }
+      
+      // 获取新创建的 AI 伙伴
+      const { data: partner } = await supabase
+        .from('ai_partners')
+        .select('*')
+        .eq('user_id', xUserId)
+        .single();
+      
+      res.json({
+        success: true,
+        data: {
+          user: { id: xUserId },
+          aiPartner: partner,
+          isNewUser: true
+        }
+      });
+      return;
+    }
+    
+    // 如果没有 telegramUserId 或 X-User-ID，返回错误
     res.status(400).json({ 
-      error: 'telegramUserId is required for zero-barrier registration' 
+      error: 'telegramUserId or X-User-ID is required' 
     });
   } catch (err) {
     console.error('Ensure user error:', err);
