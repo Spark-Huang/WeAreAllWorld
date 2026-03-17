@@ -125,6 +125,9 @@ export const generalRateLimiter = rateLimit({
   }
 });
 
+// 别名，保持向后兼容
+export const globalRateLimiter = generalRateLimiter;
+
 /**
  * 严格速率限制（用于敏感操作）
  * 每个 IP 每分钟最多 10 次请求
@@ -154,3 +157,64 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false
 });
+
+/**
+ * 获取客户端 IP 地址
+ */
+export function getClientIp(req: Request): string {
+  return req.ip || req.socket.remoteAddress || 
+         (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 
+         'unknown';
+}
+
+/**
+ * 记录认证失败并返回剩余尝试次数
+ */
+export function handleAuthFailure(req: Request): { remainingAttempts: number } {
+  const ip = getClientIp(req);
+  const now = Date.now();
+  const record = authFailureStore.get(ip);
+  
+  let count = 1;
+  if (record && now - record.lastFailure < AUTH_FAILURE_WINDOW_MS) {
+    count = record.count + 1;
+    authFailureStore.set(ip, { count, lastFailure: now });
+  } else {
+    authFailureStore.set(ip, { count: 1, lastFailure: now });
+  }
+  
+  cleanupAuthFailureStore();
+  
+  return { remainingAttempts: Math.max(0, AUTH_FAILURE_THRESHOLD - count) };
+}
+
+/**
+ * 清除认证失败记录（认证成功时调用）
+ */
+export function handleAuthSuccess(req: Request): void {
+  const ip = getClientIp(req);
+  authFailureStore.delete(ip);
+}
+
+/**
+ * 认证失败守卫中间件
+ * 检查 IP 是否被锁定，如果锁定则拒绝请求
+ */
+export function authFailureGuard(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  const ip = getClientIp(req);
+  
+  if (isAuthLocked(ip)) {
+    res.status(429).json({
+      error: 'Too many authentication failures',
+      message: '您的账户已被临时锁定，请 30 分钟后再试',
+      retryAfter: AUTH_LOCKOUT_MS / 1000
+    });
+    return;
+  }
+  
+  next();
+}
