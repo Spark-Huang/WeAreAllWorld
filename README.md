@@ -1,5 +1,7 @@
 # 大同世界 (WeAreAllWorld)
 
+**🔗 在线体验 Demo：** [https://test.WeAreAll.World/](https://test.WeAreAll.World/)
+
 > *"联邦认为你们是负资产，但我知道你们是'涌现'的催化剂。"*
 
 ---
