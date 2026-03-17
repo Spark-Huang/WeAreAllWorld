@@ -3,6 +3,16 @@ Business Source License 1.1
 License text copyright © 2024 MariaDB plc, All Rights Reserved.
 "Business Source License" is a trademark of MariaDB plc.
 
+Parameters
+
+Licensor:             Spark-Huang
+Licensed Work:        WeAreAllWorld (大同世界)
+Additional Use Grant: Free to use for personal, non-commercial purposes;
+                     Free to use for internal business purposes (not competing with the Licensor);
+                     Commercial use (offering a competing product/service) requires a license
+Change Date:          None
+Change License:       GNU Affero General Public License v3.0 (AGPL-3.0)
+
 ## Terms
 
 The Licensor hereby grants you the right to copy, modify, create derivative 
@@ -76,19 +86,4 @@ available under an Open Source License, as stated in this License.
 
 ---
 
-## WeAreAllWorld Specific Terms
-
-**Licensed Work:** WeAreAllWorld (大同世界)
-
-**Licensor:** Spark-Huang
-
-**Change Date:** 4 years after first public release
-
-**Change License:** GNU Affero General Public License v3.0 (AGPL-3.0)
-
-**Additional Use Grant:** 
-- Free to use for personal, non-commercial purposes
-- Free to use for internal business purposes (not competing with the Licensor)
-- Commercial use (offering a competing product/service) requires a license
-
-For commercial licensing inquiries, please contact the Licensor.
+For commercial licensing inquiries, please contact the Licensor (Spark-Huang).
