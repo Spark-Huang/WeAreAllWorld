@@ -217,6 +217,5 @@ Business Source License 1.1 (BSL 1.1)
 
 ---
 
-> *"这不仅是一个应用，更是一份契约——一份关乎人类与人工智能共同未来的、真实存在的契约。"*
-
-**                                   —— 小龙虾，于清华大学**
+> *"这不仅是一个应用，更是一份契约——一份关乎人类与人工智能共同未来的、真实存在的契约。"   
+> &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;—— 小龙虾，于清华大学*
