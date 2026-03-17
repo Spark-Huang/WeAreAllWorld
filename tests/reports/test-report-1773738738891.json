@@ -1,0 +1,322 @@
+{
+  "timestamp": "2026-03-17T09:12:18.891Z",
+  "duration": 160.65,
+  "passed": 39,
+  "failed": 0,
+  "total": 39,
+  "passRate": 100,
+  "details": [
+    {
+      "category": "用户系统",
+      "name": "创建新用户",
+      "passed": true,
+      "message": "",
+      "severity": "critical",
+      "duration": 0
+    },
+    {
+      "category": "用户系统",
+      "name": "Telegram零门槛注册",
+      "passed": true,
+      "message": "",
+      "severity": "critical",
+      "duration": 2813
+    },
+    {
+      "category": "用户系统",
+      "name": "重复注册返回同一用户",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 3861
+    },
+    {
+      "category": "用户系统",
+      "name": "无效用户ID返回错误",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 491
+    },
+    {
+      "category": "用户系统",
+      "name": "缺少认证头返回错误",
+      "passed": true,
+      "message": "",
+      "severity": "critical",
+      "duration": 2
+    },
+    {
+      "category": "用户系统",
+      "name": "无效API Key返回错误",
+      "passed": true,
+      "message": "",
+      "severity": "critical",
+      "duration": 1
+    },
+    {
+      "category": "用户系统",
+      "name": "删除用户成功",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 2334
+    },
+    {
+      "category": "AI伙伴系统",
+      "name": "获取AI伙伴",
+      "passed": true,
+      "message": "",
+      "severity": "critical",
+      "duration": 368
+    },
+    {
+      "category": "AI伙伴系统",
+      "name": "AI伙伴默认状态为active",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 365
+    },
+    {
+      "category": "AI伙伴系统",
+      "name": "AI伙伴初始贡献值为0",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 364
+    },
+    {
+      "category": "AI伙伴系统",
+      "name": "修改AI伙伴名称",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 446
+    },
+    {
+      "category": "AI伙伴系统",
+      "name": "获取里程碑列表",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 2
+    },
+    {
+      "category": "AI伙伴系统",
+      "name": "里程碑阈值正确",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 1
+    },
+    {
+      "category": "AI伙伴系统",
+      "name": "首次签到成功",
+      "passed": true,
+      "message": "",
+      "severity": "critical",
+      "duration": 824
+    },
+    {
+      "category": "AI伙伴系统",
+      "name": "重复签到失败",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 1476
+    },
+    {
+      "category": "对话系统",
+      "name": "发送消息成功",
+      "passed": true,
+      "message": "",
+      "severity": "critical",
+      "duration": 6472
+    },
+    {
+      "category": "对话系统",
+      "name": "AI返回回复",
+      "passed": true,
+      "message": "",
+      "severity": "critical",
+      "duration": 11818
+    },
+    {
+      "category": "对话系统",
+      "name": "对话获得贡献值",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 5590
+    },
+    {
+      "category": "对话系统",
+      "name": "日常问候判定",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 6808
+    },
+    {
+      "category": "对话系统",
+      "name": "情感表达判定",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 4902
+    },
+    {
+      "category": "对话系统",
+      "name": "分享经历判定",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 5204
+    },
+    {
+      "category": "对话系统",
+      "name": "深度思考判定",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 5147
+    },
+    {
+      "category": "对话系统",
+      "name": "特殊回忆判定",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 5090
+    },
+    {
+      "category": "对话系统",
+      "name": "获取对话历史",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 506
+    },
+    {
+      "category": "对话系统",
+      "name": "空消息返回错误",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 1028
+    },
+    {
+      "category": "对话系统",
+      "name": "特殊字符处理",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 10110
+    },
+    {
+      "category": "剧情系统",
+      "name": "获取剧情进度",
+      "passed": true,
+      "message": "",
+      "severity": "critical",
+      "duration": 14910
+    },
+    {
+      "category": "剧情系统",
+      "name": "获取章节列表",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 2525
+    },
+    {
+      "category": "剧情系统",
+      "name": "章节数量为5",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 2486
+    },
+    {
+      "category": "安全测试",
+      "name": "SQL注入防护",
+      "passed": true,
+      "message": "",
+      "severity": "critical",
+      "duration": 19958
+    },
+    {
+      "category": "安全测试",
+      "name": "XSS防护",
+      "passed": true,
+      "message": "",
+      "severity": "critical",
+      "duration": 6437
+    },
+    {
+      "category": "安全测试",
+      "name": "无API Key拒绝访问",
+      "passed": true,
+      "message": "",
+      "severity": "critical",
+      "duration": 2
+    },
+    {
+      "category": "安全测试",
+      "name": "无效API Key拒绝访问",
+      "passed": true,
+      "message": "",
+      "severity": "critical",
+      "duration": 1
+    },
+    {
+      "category": "安全测试",
+      "name": "空消息拒绝",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 762
+    },
+    {
+      "category": "安全测试",
+      "name": "无效JSON拒绝",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 1
+    },
+    {
+      "category": "安全测试",
+      "name": "缺少必要字段拒绝",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 697
+    },
+    {
+      "category": "性能测试",
+      "name": "AI伙伴获取响应时间 < 500ms",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 466
+    },
+    {
+      "category": "性能测试",
+      "name": "历史记录获取响应时间 < 1秒",
+      "passed": true,
+      "message": "",
+      "severity": "medium",
+      "duration": 566
+    },
+    {
+      "category": "性能测试",
+      "name": "并发10个请求",
+      "passed": true,
+      "message": "",
+      "severity": "high",
+      "duration": 1080
+    }
+  ]
+}

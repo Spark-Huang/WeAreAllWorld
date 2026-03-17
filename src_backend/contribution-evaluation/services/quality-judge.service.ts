@@ -36,12 +36,16 @@ export interface QualityRule {
 
 /**
  * 质量判定规则（按优先级排序）
+ * 
+ * 优先级设计原则：
+ * - 特殊回忆 > 深度思考 > 情感表达 > 分享经历 > 日常对话 > 问候
+ * - 当多个规则匹配时，选择匹配关键词数量最多的规则
  */
 const QUALITY_RULES: QualityRule[] = [
   // 特殊回忆（最高优先级）
   {
     type: 'special_memory',
-    keywords: ['童年', '小时候', '回忆', '记得那时', '第一次', '最重要', '最难忘', '印象最深', '成长经历', '人生转折'],
+    keywords: ['童年', '小时候', '回忆', '记得那时', '第一次', '最难忘', '印象最深', '成长经历', '人生转折', '怀念'],
     minLength: 15,
     points: 8,
     reason: '分享了特殊回忆',
@@ -52,7 +56,7 @@ const QUALITY_RULES: QualityRule[] = [
   // 深度思考
   {
     type: 'deep_thought',
-    keywords: ['我认为', '我觉得', '观点', '看法', '思考', '理解', '感悟', '体会', '人生意义', '价值观', '信仰', '理想'],
+    keywords: ['我认为', '我觉得', '观点', '看法', '思考', '理解', '感悟', '体会', '人生意义', '价值观', '信仰', '理想', '我的价值观', '人生的意义'],
     minLength: 20,
     points: 5,
     reason: '分享了深度思考',
@@ -60,26 +64,26 @@ const QUALITY_RULES: QualityRule[] = [
     dataRarity: '[典藏级·人类独有思维特征]'
   },
   
+  // 情感表达
+  {
+    type: 'emotion',
+    keywords: ['开心', '高兴', '难过', '伤心', '累死了', '疲惫不堪', '压力大', '压力很大', '担心', '焦虑', '害怕', '恐惧', '生气', '愤怒', '失望', '沮丧', '兴奋', '激动', '感动', '幸福', '满足', '睡不着', '心情不好', '心情很差', '很焦虑', '很担心', '很害怕', '总是焦虑', '很累', '好累'],
+    minLength: 5,
+    points: 3,
+    reason: '表达了情感',
+    priority: 65,
+    dataRarity: '[稀有·真实情感图谱]'
+  },
+  
   // 分享经历
   {
     type: 'experience',
-    keywords: ['今天', '昨天', '前天', '工作', '学习', '发生', '遇到', '经历', '做了', '去了', '参加了'],
+    keywords: ['今天', '昨天', '前天', '工作', '学习', '发生', '遇到', '经历', '做了', '去了', '参加了', '周末', '爬山', '旅游', '运动', '逛街', '看电影', '聚会', '开会', '项目'],
     minLength: 15,
     points: 4,
     reason: '分享了经历',
     priority: 60,
     dataRarity: '[珍贵·人类行为样本]'
-  },
-  
-  // 情感表达
-  {
-    type: 'emotion',
-    keywords: ['开心', '高兴', '难过', '伤心', '累', '疲惫', '压力', '担心', '焦虑', '害怕', '恐惧', '生气', '愤怒', '失望', '沮丧', '兴奋', '激动', '感动', '幸福', '满足'],
-    minLength: 5,
-    points: 3,
-    reason: '表达了情感',
-    priority: 40,
-    dataRarity: '[稀有·真实情感图谱]'
   },
   
   // 日常对话
@@ -133,26 +137,47 @@ export class QualityJudgeService {
     // 预处理消息
     const normalizedMessage = this.normalizeMessage(message);
     
-    // 按优先级检查规则
+    // 按优先级检查规则，收集所有匹配的规则
     const sortedRules = [...QUALITY_RULES].sort((a, b) => b.priority - a.priority);
+    const matchedRules: { rule: QualityRule; strength: number }[] = [];
     
     for (const rule of sortedRules) {
       if (this.matchesRule(normalizedMessage, rule)) {
-        const emotionDetected = this.detectEmotion(normalizedMessage);
-        const keyInfo = this.extractKeyInfo(normalizedMessage, rule.type);
-        const shouldCreateMemory = this.shouldCreateMemory(rule.type, normalizedMessage);
-        
-        return {
-          qualityType: rule.type,
-          points: rule.points,
-          reason: rule.reason,
-          emotionDetected,
-          keyInfo,
-          shouldCreateMemory,
-          memoryContent: shouldCreateMemory ? this.generateMemoryContent(normalizedMessage, rule.type) : null,
-          dataRarity: rule.dataRarity
-        };
+        const strength = this.getMatchStrength(normalizedMessage, rule);
+        matchedRules.push({ rule, strength });
       }
+    }
+    
+    // 选择最佳匹配的规则
+    let selectedRule: QualityRule | null = null;
+    
+    if (matchedRules.length > 0) {
+      // 如果有多个规则匹配，选择匹配强度最高的
+      // 如果强度相同，选择优先级最高的
+      matchedRules.sort((a, b) => {
+        if (b.strength !== a.strength) {
+          return b.strength - a.strength;
+        }
+        return b.rule.priority - a.rule.priority;
+      });
+      selectedRule = matchedRules[0].rule;
+    }
+    
+    if (selectedRule) {
+      const emotionDetected = this.detectEmotion(normalizedMessage);
+      const keyInfo = this.extractKeyInfo(normalizedMessage, selectedRule.type);
+      const shouldCreateMemory = this.shouldCreateMemory(selectedRule.type, normalizedMessage);
+      
+      return {
+        qualityType: selectedRule.type,
+        points: selectedRule.points,
+        reason: selectedRule.reason,
+        emotionDetected,
+        keyInfo,
+        shouldCreateMemory,
+        memoryContent: shouldCreateMemory ? this.generateMemoryContent(normalizedMessage, selectedRule.type) : null,
+        dataRarity: selectedRule.dataRarity
+      };
     }
     
     // 默认返回日常对话
@@ -180,6 +205,16 @@ export class QualityJudgeService {
     const meetsMaxLength = !rule.maxLength || message.length <= rule.maxLength;
     
     return hasKeyword && meetsMinLength && meetsMaxLength;
+  }
+  
+  /**
+   * 计算规则的匹配强度（匹配的关键词数量）
+   */
+  private getMatchStrength(message: string, rule: QualityRule): number {
+    const matchedKeywords = rule.keywords.filter(keyword => 
+      message.toLowerCase().includes(keyword.toLowerCase())
+    );
+    return matchedKeywords.length;
   }
   
   /**
