@@ -325,42 +325,37 @@ function App() {
       
       // 检查是否章节完成
       if (currentScene.type === 'milestone') {
-        // 章节完成，调用 API 保存进度
-        try {
-          setStoryLoading(true)
-          const res = await fetch(`${API_BASE}/story/advance`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({ 
-              choiceId,
-              pendingChoices: pendingChoices, // 提交所有待提交的选择
-              currentSceneId: currentScene.id, // 当前场景 ID
-              completedChapterId: storyData.progress.currentChapter // 已完成的章节 ID
-            })
+        // 章节完成，立即关闭剧情界面（不等待后端）
+        setShowStory(false)
+        setStoryTransition(false)
+        
+        // 后台调用 API 保存进度（不阻塞 UI）
+        fetch(`${API_BASE}/story/advance`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({ 
+            choiceId,
+            pendingChoices: pendingChoices,
+            currentSceneId: currentScene.id,
+            completedChapterId: storyData.progress.currentChapter
           })
-          const data = await res.json()
+        }).then(res => res.json()).then(data => {
           if (data.success) {
             // 刷新伙伴数据
-            await loadPartner(session)
+            loadPartner(session)
             // 清空待提交的选择
             setPendingChoices([])
-            // 先关闭剧情界面，再重新加载剧情
-            // 因为后端是异步处理，立即关闭避免 race condition
-            setShowStory(false)
-            // 延迟加载剧情，等待后端处理完成
+            // 延迟加载剧情，更新进度
             setTimeout(() => {
               loadStory(session)
             }, 1000)
           }
-        } catch (err) {
+        }).catch(err => {
           console.error('Advance story failed:', err)
-        } finally {
-          setStoryLoading(false)
-          setStoryTransition(false)
-        }
+        })
         return
       }
       
