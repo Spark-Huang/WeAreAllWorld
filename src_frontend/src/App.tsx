@@ -164,11 +164,12 @@ function App() {
       }
     })
 
-    // 监听认证状态变化
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // 监听认证状态变化 - 只在登录事件时加载数据
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
-      if (session?.user) {
+      // 只在 SIGNED_IN 事件时加载数据，避免频繁调用
+      if (event === 'SIGNED_IN' && session?.user) {
         ensureUserExists(session)
         loadPartner(session)
         loadStory(session)
