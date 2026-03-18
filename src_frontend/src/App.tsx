@@ -347,15 +347,13 @@ function App() {
             await loadPartner(session)
             // 清空待提交的选择
             setPendingChoices([])
-            // 如果有下一章，加载下一章的场景
-            if (data.data.nextScene) {
-              // 重新加载剧情获取下一章的场景数据
+            // 先关闭剧情界面，再重新加载剧情
+            // 因为后端是异步处理，立即关闭避免 race condition
+            setShowStory(false)
+            // 延迟加载剧情，等待后端处理完成
+            setTimeout(() => {
               loadStory(session)
-            } else {
-              // 没有下一场景，关闭剧情界面
-              setShowStory(false)
-              loadStory(session)
-            }
+            }, 1000)
           }
         } catch (err) {
           console.error('Advance story failed:', err)
