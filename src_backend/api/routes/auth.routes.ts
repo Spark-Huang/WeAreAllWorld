@@ -210,6 +210,24 @@ router.post('/ensure-user', async (req: Request, res: Response) => {
         .eq('user_id', userId)
         .single();
       
+      // 异步创建 OpenClaw 实例（不阻塞响应）
+      setImmediate(async () => {
+        try {
+          const openclawService = getOpenClawProvisionService();
+          if (openclawService) {
+            console.log(`🚀 为用户 ${userId} 创建 OpenClaw 实例...`);
+            const result = await openclawService.provisionForUser(userId);
+            if (result.success) {
+              console.log(`✅ 用户 ${userId} OpenClaw 实例创建成功: ${result.instance?.podName}`);
+            } else {
+              console.warn(`⚠️ 用户 ${userId} OpenClaw 实例创建失败:`, result.error);
+            }
+          }
+        } catch (err) {
+          console.warn('OpenClaw 实例创建异常:', err);
+        }
+      });
+      
       res.json({
         success: true,
         data: {
