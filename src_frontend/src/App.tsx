@@ -569,11 +569,19 @@ function App() {
         setChatHistory(prev => [...prev, {
           role: 'assistant',
           content: 'Check in成功！今天也要元气满满哦～ 🎉',
-          timestamp: new Date()
+          timestamp: new Date(),
+          qualityType: 'checkin-success'
         }])
         await loadPartner(session)
       } else {
-        alert(data.message || data.data?.message || t('checkin.checkinFailed'))
+        // 签到失败或已签到，也显示提示
+        const message = data.message || data.data?.message || t('checkin.checkinFailed')
+        setChatHistory(prev => [...prev, {
+          role: 'assistant',
+          content: message,
+          timestamp: new Date(),
+          qualityType: 'checkin-info'
+        }])
       }
     } catch (err) {
       console.error('Checkin failed:', err)
@@ -922,7 +930,7 @@ function App() {
           <h1 className="text-xl font-bold">🌍 {t('brand.name')}</h1>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
-            <span className="text-sm opacity-80">{partner?.total_contribution || 0} {t('ai.contribution')}</span>
+            <span data-testid="contribution-value" className="text-sm opacity-80">{partner?.total_contribution || 0} {t('ai.contribution')}</span>
             {/* 剧情按钮 */}
             {storyData && !storyData.progress.completedChapters.includes(5) && (
               <button 
@@ -969,7 +977,7 @@ function App() {
                 >
                   ✏️ {t('ai.rename')}
                 </button>
-                <span className={`text-sm ${stage?.color}`}>
+                <span data-testid="growth-stage" className={`text-sm ${stage?.color}`}>
                   {stage?.name}
                 </span>
               </div>
@@ -1020,11 +1028,14 @@ function App() {
                   key={i} 
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className={`max-w-[80%] ${
-                    msg.role === 'user' 
-                      ? 'bg-primary-500 text-white rounded-2xl rounded-br-md' 
-                      : 'bg-white shadow rounded-2xl rounded-bl-md'
-                  } px-4 py-2`}>
+                  <div 
+                    data-testid={msg.role === 'assistant' ? 'ai-reply' : undefined}
+                    className={`max-w-[80%] ${
+                      msg.role === 'user' 
+                        ? 'bg-primary-500 text-white rounded-2xl rounded-br-md' 
+                        : 'bg-white shadow rounded-2xl rounded-bl-md'
+                    } px-4 py-2`}
+                  >
                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                     {msg.points !== undefined && msg.points > 0 && (
                       <p className="text-xs mt-1 opacity-70">+{msg.points}{t('common.points')}</p>
