@@ -9,10 +9,11 @@ export default defineConfig({
     port: 5173,
     allowedHosts: ['test.weareall.world', 'kf.weareall.world', '.weareall.world'],
     // HMR 配置 - 通过 Cloudflare 访问时使用 WSS
-    hmr: process.env.VITE_HMR_HOST ? {
+    hmr: {
       protocol: 'wss',
-      host: process.env.VITE_HMR_HOST
-    } : undefined,
+      host: 'test.weareall.world',
+      clientPort: 443
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
