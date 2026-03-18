@@ -45,20 +45,22 @@ router.post('/register', async (req: Request, res: Response) => {
 /**
  * POST /api/v1/auth/ensure-user
  * 确保用户记录存在（登录时调用）
- * 支持两种方式：
+ * 支持三种方式：
  * 1. 零门槛注册：只需要 telegramUserId
  * 2. 已认证用户：通过 X-User-ID header
+ * 3. 已认证用户：通过 Authorization: Bearer token (Supabase JWT)
  */
 router.post('/ensure-user', async (req: Request, res: Response) => {
   console.log('[ENSURE-USER] Request received:', {
     telegramUserId: req.body?.telegramUserId,
     xUserId: req.headers['x-user-id'],
-    headers: req.headers['x-api-key']
+    hasAuth: !!req.headers['authorization']
   });
   
   try {
     const { telegramUserId, telegramUsername } = req.body;
     const xUserId = req.headers['x-user-id'] as string;
+    const authHeader = req.headers['authorization'] as string;
     
     // 方式1: 零门槛注册（只需要 telegramUserId）
     if (telegramUserId) {
@@ -79,7 +81,7 @@ router.post('/ensure-user', async (req: Request, res: Response) => {
     
     // 方式2: 已认证用户（通过 X-User-ID header）
     if (xUserId) {
-      console.log('[ENSURE-USER] Ensuring user exists for:', xUserId);
+      console.log('[ENSURE-USER] Ensuring user exists for X-User-ID:', xUserId);
       
       // 检查用户是否已存在
       const { data: existingUser } = await supabase
@@ -142,9 +144,86 @@ router.post('/ensure-user', async (req: Request, res: Response) => {
       return;
     }
     
-    // 如果没有 telegramUserId 或 X-User-ID，返回错误
+    // 方式3: 通过 Authorization: Bearer token (Supabase JWT)
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      
+      // 用 Supabase 验证 token 并获取用户信息
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !authUser) {
+        console.log('[ENSURE-USER] Token verification failed:', authError);
+        res.status(401).json({ error: 'Invalid or expired token' });
+        return;
+      }
+      
+      const userId = authUser.id;
+      console.log('[ENSURE-USER] Ensuring user exists for token user:', userId);
+      
+      // 检查用户是否已存在
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .single();
+      
+      if (existingUser) {
+        // 检查 AI 伙伴是否存在
+        const { data: existingPartner } = await supabase
+          .from('ai_partners')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+        
+        res.json({
+          success: true,
+          data: {
+            user: { id: userId },
+            aiPartner: existingPartner,
+            isNewUser: false
+          }
+        });
+        return;
+      }
+      
+      // 创建用户记录（触发器会自动创建AI伙伴）
+      const { error } = await supabase
+        .from('users')
+        .insert({
+          id: userId,
+          telegram_user_id: Math.floor(Math.random() * 1000000000),
+          telegram_username: telegramUsername || authUser.email?.split('@')[0] || 'web_user',
+          onboarding_step: 0,
+          onboarding_completed: false
+        });
+      
+      if (error) {
+        console.error('Create user error:', error);
+        res.status(500).json({ error: 'Failed to create user' });
+        return;
+      }
+      
+      // 获取新创建的 AI 伙伴
+      const { data: partner } = await supabase
+        .from('ai_partners')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      
+      res.json({
+        success: true,
+        data: {
+          user: { id: userId },
+          aiPartner: partner,
+          isNewUser: true
+        }
+      });
+      return;
+    }
+    
+    // 如果没有任何认证信息，返回错误
     res.status(400).json({ 
-      error: 'telegramUserId or X-User-ID is required' 
+      error: 'telegramUserId, X-User-ID, or Authorization header is required' 
     });
   } catch (err) {
     console.error('Ensure user error:', err);
