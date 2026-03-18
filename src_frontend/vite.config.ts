@@ -8,6 +8,11 @@ export default defineConfig({
     host: '0.0.0.0',  // 允许外网访问
     port: 5173,
     allowedHosts: ['test.weareall.world', 'kf.weareall.world', '.weareall.world'],
+    // HMR 配置 - 通过 Cloudflare 访问时使用 WSS
+    hmr: process.env.VITE_HMR_HOST ? {
+      protocol: 'wss',
+      host: process.env.VITE_HMR_HOST
+    } : undefined,
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
