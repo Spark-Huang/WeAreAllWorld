@@ -163,11 +163,11 @@ export function authRateLimitMiddleware(
 
 /**
  * 通用 API 速率限制
- * 每个 IP 每分钟最多 60 次请求
+ * 每个 IP 每分钟最多 1000 次请求（开发环境宽松限制）
  */
 export const generalRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 分钟
-  max: 60, // 每个 IP 最多 60 次请求
+  max: 1000, // 每个 IP 最多 1000 次请求
   message: {
     error: 'Too many requests',
     message: '请求过于频繁，请稍后再试'
@@ -189,11 +189,11 @@ export const globalRateLimiter = generalRateLimiter;
 
 /**
  * 严格速率限制（用于敏感操作）
- * 每个 IP 每分钟最多 10 次请求
+ * 每个 IP 每分钟最多 100 次请求
  */
 export const strictRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 分钟
-  max: 10, // 每个 IP 最多 10 次请求
+  max: 100, // 每个 IP 最多 100 次请求
   message: {
     error: 'Too many requests',
     message: '操作过于频繁，请稍后再试'
@@ -204,11 +204,11 @@ export const strictRateLimiter = rateLimit({
 
 /**
  * 认证端点速率限制
- * 每个 IP 每分钟最多 10 次请求（严格限制防止暴力破解）
+ * 每个 IP 每分钟最多 100 次请求
  */
 export const authRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 分钟
-  max: 10, // 每个 IP 最多 10 次认证请求
+  max: 100, // 每个 IP 最多 100 次认证请求
   message: {
     error: 'Too many authentication attempts',
     message: '认证请求过于频繁，请稍后再试'
