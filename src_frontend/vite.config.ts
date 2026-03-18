@@ -8,10 +8,11 @@ export default defineConfig({
     host: '0.0.0.0',  // 允许外网访问
     port: 5173,
     allowedHosts: ['test.weareall.world', 'kf.weareall.world', '.weareall.world'],
-    // HMR 配置 - 使用 HTTPS
-    hmr: {
-      protocol: 'wss',
-      host: 'test.weareall.world'
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      }
     }
   }
 })
