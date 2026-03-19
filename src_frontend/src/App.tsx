@@ -152,6 +152,9 @@ function App() {
 
   // 监听认证状态变化
   useEffect(() => {
+    // 用于防止重复加载
+    let storyLoaded = false
+
     // 获取当前会话
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -159,8 +162,12 @@ function App() {
       if (session?.user) {
         ensureUserExists(session)
         loadPartner(session)
-        loadStory(session)
         loadChatHistory(session)
+        // 只在首次加载时调用 story（已登录用户刷新页面）
+        if (!storyLoaded) {
+          storyLoaded = true
+          loadStory(session)
+        }
       }
     })
 
@@ -172,8 +179,12 @@ function App() {
       if (event === 'SIGNED_IN' && session?.user) {
         ensureUserExists(session)
         loadPartner(session)
-        loadStory(session)
         loadChatHistory(session)
+        // 只在首次登录时调用 story（新登录用户）
+        if (!storyLoaded) {
+          storyLoaded = true
+          loadStory(session)
+        }
       }
     })
 
