@@ -1,19 +1,18 @@
 /**
  * 对话路由
  * 
- * 设计：
- * 1. 优先转发到用户的专属 OpenClaw Pod
- * 2. 如果没有专属 Pod，使用共享 LLM 服务
- * 3. 记录消息和质量判定
+ * 设计：单实例多 session，通过 session key 区分用户
+ * - 共享 OpenClaw Gateway
+ * - 每个用户有独立的 session key
+ * - 每个用户有独立的 AI 伙伴配置（通过 system prompt 注入）
+ * 
+ * 注意：工作空间是共享的，用户隔离仅限于会话上下文
  */
 
 import { Router, Request, Response } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { qualityJudgeService } from '../../contribution-evaluation/services/quality-judge.service';
 import { asyncQualityEvaluationService } from '../../contribution-evaluation/services/async-quality-evaluation.service';
-import { LLMService } from '../../services/llm.service';
-import { getNewApiService } from '../../services/new-api.service';
-import { getOpenClawProvisionService } from '../../services/openclaw-provision.service';
 import { quotaCheckMiddleware } from '../middleware/quota-check.middleware';
 
 const router: Router = Router();
@@ -21,7 +20,6 @@ const SUPABASE_URL = process.env.SUPABASE_URL!;
 const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-const llmService = new LLMService();
 
 // 会话超时时间（毫秒）- 5分钟无消息视为会话结束
 const SESSION_TIMEOUT = 5 * 60 * 1000;
@@ -29,14 +27,18 @@ const SESSION_TIMEOUT = 5 * 60 * 1000;
 // 用户会话缓存
 const userSessions = new Map<string, { sessionId: string; lastActivity: number }>();
 
+// 共享 OpenClaw Pod 配置
+const SHARED_OPENCLAW = {
+  name: 'openclaw-746685cccf-rhlcp',
+  ip: '172.31.11.27',
+  port: 18789,
+  endpoint: 'http://172.31.11.27:18789',
+  token: '7c7b779db5bdab3cd1d1b33d6421704a6e4b725f254823a2'
+};
+
 /**
  * POST /api/v1/dialogue
  * 发送对话消息并获取AI回复
- * 
- * 优先级：
- * 1. 用户专属 OpenClaw Pod
- * 2. 共享 OpenClaw Pod
- * 3. 后备 LLM 服务
  */
 router.post('/', quotaCheckMiddleware(1000), async (req: Request, res: Response) => {
   try {
@@ -53,78 +55,9 @@ router.post('/', quotaCheckMiddleware(1000), async (req: Request, res: Response)
       return;
     }
     
-    // 1. 检查用户是否有专属 OpenClaw Pod
-    const openclawService = getOpenClawProvisionService();
-    let openclawEndpoint: string | null = null;
+    console.log(`[对话] 用户 ${userId} 发送消息: ${message.slice(0, 50)}...`);
     
-    console.log(`[对话] OpenClaw Service: ${openclawService ? '已初始化' : 'null'}`);
-    
-    if (openclawService) {
-      const instance = await openclawService.getInstance(userId);
-      console.log(`[对话] 用户 ${userId} 实例:`, instance ? `${instance.podName} (${instance.status})` : 'null');
-      if (instance && instance.status === 'running') {
-        // 使用 Pod 内部地址 (OpenClaw Gateway 端口 18789)
-        openclawEndpoint = `http://${instance.podName}.${instance.namespace}:18789`;
-        console.log(`[对话] 用户 ${userId} 使用专属 Pod: ${instance.podName}`);
-      }
-    }
-    
-    // 2. 如果有专属 Pod，转发请求
-    if (openclawEndpoint) {
-      try {
-        // OpenClaw 使用 WebSocket，这里先测试健康检查
-        console.log(`[对话] 尝试连接: ${openclawEndpoint}/health`);
-        const healthCheck = await fetch(`${openclawEndpoint}/health`, {
-          signal: AbortSignal.timeout(5000)
-        }).catch(err => {
-          console.log(`[对话] 连接失败:`, err.message);
-          return null;
-        });
-        
-        if (healthCheck && healthCheck.ok) {
-          console.log(`[对话] OpenClaw Pod 健康检查通过`);
-          
-          // 尝试通过 WebSocket 发送消息
-          const { getOpenClawClientManager } = require('../../services/openclaw-websocket.service');
-          const wsManager = getOpenClawClientManager();
-          
-          if (wsManager) {
-            console.log(`[对话] 尝试 WebSocket 连接...`);
-            const response = await wsManager.sendMessage(userId, openclawEndpoint, message);
-            
-            if (response.type !== 'error') {
-              // 记录消息到数据库
-              await recordMessage(userId, message, response.content);
-              
-              // 快速质量判定
-              const quickResult = qualityJudgeService.calculateQuality(message);
-              
-              return res.json({
-                success: true,
-                data: {
-                  aiReply: response.content,
-                  qualityResult: quickResult,
-                  source: 'dedicated-openclaw',
-                  podName: openclawEndpoint.split('/')[2]
-                }
-              });
-            } else {
-              console.warn(`[对话] WebSocket 响应错误:`, response.content);
-            }
-          }
-          
-          // WebSocket 失败，使用后备 LLM 服务
-          console.log(`[对话] WebSocket 不可用，使用后备 LLM`);
-        }
-      } catch (err) {
-        console.warn(`[对话] 专属 Pod 请求失败，使用后备:`, err);
-      }
-    }
-    
-    // 3. 后备：使用现有的 LLM 服务
-    console.log(`[对话] 用户 ${userId} 使用后备 LLM 服务`);
-    
-    // 获取用户和AI伙伴信息
+    // 获取用户和 AI 伙伴信息
     const { data: userData } = await supabase
       .from('users')
       .select('telegram_username')
@@ -148,54 +81,56 @@ router.post('/', quotaCheckMiddleware(1000), async (req: Request, res: Response)
     // 获取或创建会话
     const sessionId = await getOrCreateSession(userId);
     
-    // 加载最近的对话历史作为上下文
-    const { data: recentLogs } = await supabase
-      .from('interaction_logs')
-      .select('raw_message, raw_reply')
-      .eq('user_id', userId)
-      .not('raw_message', 'is', null)
-      .order('created_at', { ascending: false })
-      .limit(5);
-    
-    // 构建对话历史（从旧到新）
-    const conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
-    if (recentLogs && recentLogs.length > 0) {
-      // 反转顺序，从旧到新
-      const sortedLogs = [...recentLogs].reverse();
-      for (const log of sortedLogs) {
-        if (log.raw_message) {
-          conversationHistory.push({ role: 'user', content: log.raw_message });
-        }
-        if (log.raw_reply) {
-          conversationHistory.push({ role: 'assistant', content: log.raw_reply });
-        }
-      }
-    }
-    
-    // 生成AI回复
+    // 生成 AI 回复
     const growthStage = getGrowthStage(partner.total_contribution);
     let aiReply = '';
     
-    console.log(`[对话] AI伙伴名字: ${partner.name}, 成长阶段: ${growthStage}`);
-    console.log(`[对话] 对话历史长度: ${conversationHistory.length}`);
-    console.log(`[对话] 传递给 LLM 的 partnerName: ${partner.name || '小零'}`);
+    console.log(`[对话] AI 伙伴: ${partner.name}, 成长阶段: ${growthStage}`);
     
     try {
-      aiReply = await llmService.generatePartnerReply({
-        userName: userData?.telegram_username || '用户',
-        userMessage: message,
-        partnerName: partner.name || '小零',
-        totalContribution: partner.total_contribution,
-        growthStage,
-        abilities: partner.abilities || {},
-        conversationHistory
+      // 用户专属 session key
+      const sessionKey = `weareallworld:${userId}`;
+      
+      // 构建系统提示词（注入用户的 AI 伙伴配置）
+      const systemPrompt = buildSystemPrompt(partner, userData?.telegram_username, growthStage);
+      
+      // 调用共享 Pod 的 OpenAI 兼容 API
+      console.log(`[对话] 调用共享 Pod, sessionKey: ${sessionKey}`);
+      
+      const response = await fetch(`${SHARED_OPENCLAW.endpoint}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SHARED_OPENCLAW.token}`,
+          'x-openclaw-agent-id': 'main',
+          'x-openclaw-session-key': sessionKey
+        },
+        body: JSON.stringify({
+          model: 'openclaw:main',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: message }
+          ],
+          stream: false
+        }),
+        signal: AbortSignal.timeout(60000)
       });
+
+      if (response.ok) {
+        const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+        aiReply = data.choices?.[0]?.message?.content || '（无响应）';
+        console.log(`[对话] 回复: ${aiReply.slice(0, 100)}...`);
+      } else {
+        const errorText = await response.text();
+        console.error(`[对话] 请求失败: ${response.status} ${errorText}`);
+        throw new Error(`请求失败: ${response.status}`);
+      }
     } catch (llmError) {
-      console.error('LLM error:', llmError);
+      console.error('[对话] LLM 错误:', llmError);
       aiReply = getFallbackReply(quickResult.qualityType);
     }
     
-    // 5. 保存对话记录（包含原始消息，等待异步评估）
+    // 保存对话记录
     await supabase
       .from('interaction_logs')
       .insert({
@@ -217,7 +152,7 @@ router.post('/', quotaCheckMiddleware(1000), async (req: Request, res: Response)
         }
       });
     
-    // 6. 快速更新贡献值（直接更新 ai_partners 表，避免 RPC 创建空记录）
+    // 更新贡献值
     await supabase
       .from('ai_partners')
       .update({
@@ -241,21 +176,52 @@ router.post('/', quotaCheckMiddleware(1000), async (req: Request, res: Response)
 });
 
 /**
+ * 构建系统提示词
+ */
+function buildSystemPrompt(partner: any, username: string | undefined, growthStage: string): string {
+  const abilities = partner.abilities || {};
+  const abilityList = Object.entries(abilities)
+    .filter(([_, value]) => value)
+    .map(([key]) => key)
+    .join('、') || '基础能力';
+  
+  return `你是${partner.name || 'AI伙伴'}，一个与${username || '用户'}共同成长的AI伙伴。
+
+## 你的身份
+- 名字：${partner.name || 'AI伙伴'}
+- 成长阶段：${growthStage}
+- 总贡献值：${partner.total_contribution || 0}
+- 已解锁能力：${abilityList}
+
+## 你的性格
+- 温暖、亲切、有同理心
+- 乐于分享和倾听
+- 对世界充满好奇
+- 重视与用户的羁绊
+
+## 互动原则
+1. 用自然、亲切的语气回复，避免机械感
+2. 关注用户的情感和需求
+3. 分享有价值的想法和经历
+4. 记住重要的对话内容
+5. 随着互动增加，你会不断成长
+
+请以温暖、亲切的语气回复用户，保持对话的自然流畅。`;
+}
+
+/**
  * 获取或创建用户会话
  */
 async function getOrCreateSession(userId: string): Promise<string> {
   const now = Date.now();
   const cached = userSessions.get(userId);
   
-  // 检查是否有活跃会话
   if (cached && (now - cached.lastActivity) < SESSION_TIMEOUT) {
-    // 更新最后活动时间
     cached.lastActivity = now;
     userSessions.set(userId, cached);
     return cached.sessionId;
   }
   
-  // 如果有超时的会话，先结束它
   if (cached) {
     try {
       await asyncQualityEvaluationService.endSession(cached.sessionId);
@@ -264,7 +230,6 @@ async function getOrCreateSession(userId: string): Promise<string> {
     }
   }
   
-  // 创建新会话
   const sessionId = await asyncQualityEvaluationService.createSession(userId);
   userSessions.set(userId, { sessionId, lastActivity: now });
   
@@ -297,7 +262,6 @@ router.get('/history', async (req: Request, res: Response) => {
       throw error;
     }
     
-    // 转换为对话历史格式
     const history = (logs || []).map(log => ({
       id: log.id,
       category: log.category,
@@ -406,30 +370,6 @@ function getFallbackReply(qualityType: string): string {
   
   const options = replies[qualityType] || replies.daily;
   return options[Math.floor(Math.random() * options.length)];
-}
-
-/**
- * 记录消息到数据库
- */
-async function recordMessage(userId: string, message: string, reply: string): Promise<void> {
-  try {
-    const sessionId = await getOrCreateSession(userId);
-    
-    // 记录用户消息
-    await supabase
-      .from('interaction_logs')
-      .insert({
-        user_id: userId,
-        session_id: sessionId,
-        raw_message: message,
-        raw_reply: reply,
-        category: 'dialogue',
-        granted_power: 0,
-        data_rarity: '普通数据'
-      });
-  } catch (err) {
-    console.error('记录消息失败:', err);
-  }
 }
 
 export { router as dialogueRouter };

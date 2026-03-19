@@ -122,9 +122,14 @@ export class OpenClawProvisionService {
     // 检查实际 Pod 状态
     const actualStatus = await this.getPodStatus(data.pod_name);
     
+    // 转换数据库字段名到 camelCase
     return {
-      ...data,
-      status: actualStatus
+      userId: data.user_id,
+      podName: data.pod_name,
+      namespace: data.namespace,
+      status: actualStatus as 'pending' | 'running' | 'stopped' | 'error',
+      createdAt: data.created_at,
+      endpoint: data.endpoint
     };
   }
   
@@ -198,6 +203,10 @@ spec:
           value: "18789"
         - name: GATEWAY__AGENT__MODEL
           value: "hwc_maas/deepseek-v3.2"
+        - name: GATEWAY__AUTH__MODE
+          value: "token"
+        - name: GATEWAY__AUTH__TOKEN
+          value: "7c7b779db5bdab3cd1d1b33d6421704a6e4b725f254823a2"
         - name: ANTHROPIC_API_KEY
           valueFrom:
             secretKeyRef:

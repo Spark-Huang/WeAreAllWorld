@@ -45,21 +45,16 @@ export class OpenClawWebSocketClient {
       try {
         const wsUrl = this.endpoint.replace('http://', 'ws://').replace('https://', 'wss://');
         
-        this.ws = new WebSocket(wsUrl, {
-          headers: {
-            'Authorization': `Bearer ${this.token}`
-          }
-        });
+        this.ws = new WebSocket(wsUrl);
 
         this.ws.on('open', () => {
-          console.log(`[OpenClaw WS] 已连接到 ${wsUrl}`);
+          console.log(`[OpenClaw WS] 已连接到 ${wsUrl}，等待 challenge...`);
           this.reconnectAttempts = 0;
-          this.flushMessageQueue();
-          resolve(true);
+          // 不立即 resolve，等待 challenge
         });
 
         this.ws.on('message', (data: WebSocket.Data) => {
-          this.handleMessage(data);
+          this.handleMessage(data, resolve);
         });
 
         this.ws.on('error', (error: Error) => {
@@ -77,7 +72,7 @@ export class OpenClawWebSocketClient {
           if (this.ws?.readyState !== WebSocket.OPEN) {
             resolve(false);
           }
-        }, 5000);
+        }, 10000);
       } catch (error) {
         console.error('[OpenClaw WS] 连接失败:', error);
         resolve(false);
@@ -128,9 +123,40 @@ export class OpenClawWebSocketClient {
   /**
    * 处理收到的消息
    */
-  private handleMessage(data: WebSocket.Data): void {
+  private handleMessage(data: WebSocket.Data, connectResolve?: (success: boolean) => void): void {
     try {
-      const response = JSON.parse(data.toString()) as OpenClawResponse;
+      const msg = JSON.parse(data.toString());
+      
+      // 处理 challenge 事件
+      if (msg.type === 'event' && msg.event === 'connect.challenge') {
+        console.log('[OpenClaw WS] 收到 challenge，发送响应...');
+        const response = {
+          type: 'connect.response',
+          nonce: msg.payload.nonce,
+          token: this.token
+        };
+        this.ws?.send(JSON.stringify(response));
+        return;
+      }
+      
+      // 处理连接成功事件
+      if (msg.type === 'event' && msg.event === 'connect.ready') {
+        console.log('[OpenClaw WS] 认证成功，连接就绪');
+        this.reconnectAttempts = 0;
+        this.flushMessageQueue();
+        connectResolve?.(true);
+        return;
+      }
+      
+      // 处理错误事件
+      if (msg.type === 'event' && msg.event === 'connect.error') {
+        console.error('[OpenClaw WS] 认证失败:', msg.payload);
+        connectResolve?.(false);
+        return;
+      }
+      
+      // 处理普通响应
+      const response = msg as OpenClawResponse;
       
       // 清除超时
       if (this.responseTimeout) {
